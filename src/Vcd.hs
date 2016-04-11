@@ -12,6 +12,7 @@ module Vcd
 
 import           Control.Applicative ( (<$>), (<|>), (*>), (<*>) )
 import           Control.Monad (mzero)
+-- Lazy or Char8? Is there a Lazy.Char8?
 import           Data.Attoparsec.ByteString.Lazy
 import           Data.Attoparsec.ByteString.Char8
                     hiding (takeWhile, parseTest, parse, Fail, Done, takeTill, inClass,
@@ -19,6 +20,7 @@ import           Data.Attoparsec.ByteString.Char8
 -- import           Data.Char (isSpace)
 import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.Traversable as Traversable
 import           Data.Word (Word8)
 
 import Prelude hiding (takeWhile)
@@ -32,6 +34,11 @@ data Header
     | Wire !Int !BS.ByteString !BS.ByteString -- ^ Width Alias Name
     | Ignored
     deriving (Eq, Show)
+
+-- TODO: may need
+--   Headers [Header]
+-- instance Traversable Header where
+
 
 data Signal
     = TimeStamp !Int

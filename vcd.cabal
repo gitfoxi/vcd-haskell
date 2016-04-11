@@ -65,7 +65,12 @@ library
   -- Base language which the package is written in.
   default-language:    Haskell2010
   
-Executable Test
-  Main-Is:        Test.hs
+Executable VcdStrip-single-threaded
+  Main-Is:        VcdStrip-single-threaded.hs
   Hs-Source-Dirs: .
-  build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd
+  build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers
+
+Executable VcdStrip-multi-core
+  Main-Is:        VcdStrip-multi-core.hs
+  Hs-Source-Dirs: .
+  build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers
