@@ -1278,6 +1278,19 @@ eatExtraTimestamps (a:b:cs) =
     else a : eatExtraTimestamps (b:cs)
 eatExtraTimestamps a = a
 
+chunkSize = 64000
+
+filterChunk :: Chan B.ByteString -> B.ByteString -> Int -> Int -> IO ()
+filterChunk ch inp workerId nWorkers =
+  let
+      dropPartial = B.drop 1 . B.dropWhile (/= '\n')
+      chunk = take chunkSize . dropPartial $ inp
+      outChunk = B.unlines . eatExtraTimestamps . filter (isKeep keep) . B.lines $ chunk
+  in
+    mapM_ (writeChan ch) chunks
+
+filterChunks :: Chan B.ByteString -> B.ByteString -> Int -> Int -> IO ()
+filterChunks
 
 main :: IO ()
 main = do
@@ -1285,8 +1298,7 @@ main = do
     when (cpus < 48) $
       warn $ "Only " ++ show cpus ++ " cpus detected. We recommend at least 48."
 
-    [filename] <- getArgs
-    f <- B.readFile filename
+    f <- B.getContents
     let res = parse parseAllHeaders f
         (hdrs, theRest) =
           case res of
@@ -1301,5 +1313,8 @@ main = do
             Done theRest hdrs -> (hdrs, theRest)
         aliases = aliasesToStrip hdrs
         keep = aliasesToKeep hdrs
-    mapM_ B.putStrLn $ eatExtraTimestamps . filter (isKeep keep) . B.lines $ theRest
+    ch <- newChan
+    worker <- forkIO (filterChunks ch theRest 0 1)
+    mapM_ putStr (getChanContents ch)
+    -- mapM_ B.putStrLn $ eatExtraTimestamps . filter (isKeep keep) . B.lines $ theRest
     -- print $ parseOnly parseSignal theRest
