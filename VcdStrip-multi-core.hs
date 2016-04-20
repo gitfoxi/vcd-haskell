@@ -18,13 +18,18 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-import           Control.Concurrent (getNumCapabilities)
-import           Control.Monad (when)
+import           Control.Concurrent -- (getNumCapabilities, Chan, writeChan, newChan, forkIO, getChanContents)
+import           Control.Concurrent.MVar
+import           Control.Monad (when, replicateM)
+import           Control.Parallel.Strategies
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
+import           Data.List (transpose)
 import qualified Data.Traversable as Traversable
 import qualified Data.Set as Set
 import           System.Environment (getArgs)
+import           System.IO (stderr, hPutStrLn)
+import           System.IO.Unsafe
 
 import Vcd
 
@@ -1221,7 +1226,7 @@ headersToList             (h:hs)   = h:headersToList hs
 headersToList              []      = []
 
 aliasesToStrip :: [Header] -> Set.Set B.ByteString
-aliasesToStrip = aliasesFromSigs sigsToStrip 
+aliasesToStrip = aliasesFromSigs sigsToStrip
 
 aliasesToKeep = aliasesFromSigs sigsToKeep
 
@@ -1263,35 +1268,45 @@ isKeep goodsigs l =
    || a == '#'
    || a == '$'
    || Set.member sig goodsigs
-  
-  
+
+
 warn :: String -> IO ()
-warn s = putStrLn $ "Warning: " ++ s
+warn s = hPutStrLn stderr $ "Warning: " ++ s
 
 isTimestamp :: B.ByteString -> Bool
 isTimestamp a = "#" `B.isPrefixOf` a
 
 eatExtraTimestamps :: [B.ByteString] -> [B.ByteString]
 eatExtraTimestamps (a:b:cs) =
-  if isTimestamp a && isTimestamp b 
+  if isTimestamp a && isTimestamp b
     then eatExtraTimestamps (b:cs)
     else a : eatExtraTimestamps (b:cs)
 eatExtraTimestamps a = a
 
-chunkSize = 64000
+-- chunkSize = 64000
+chunkLines = 16000
 
-filterChunk :: Chan B.ByteString -> B.ByteString -> Int -> Int -> IO ()
-filterChunk ch inp workerId nWorkers =
-  let
-      dropPartial = B.drop 1 . B.dropWhile (/= '\n')
-      chunk = take chunkSize . dropPartial $ inp
-      outChunk = B.unlines . eatExtraTimestamps . filter (isKeep keep) . B.lines $ chunk
-  in
-    mapM_ (writeChan ch) chunks
+filterChunk
+ :: Set.Set B.ByteString -- ^ signal ids to keep
+ -> [B.ByteString] -- ^ A chunk already split into lines
+ -> B.ByteString
+filterChunk keep =
+      B.unlines . eatExtraTimestamps . filter (isKeep keep)
 
-filterChunks :: Chan B.ByteString -> B.ByteString -> Int -> Int -> IO ()
-filterChunks
+filterChunks :: Int -> [[B.ByteString]] -> Set.Set B.ByteString -> [B.ByteString]
+filterChunks nThreads bss keep =
+  parMap rpar (filterChunk keep) bss
 
+
+chunk :: B.ByteString -> [[B.ByteString]]
+chunk = go . B.lines
+  where
+    go [] = []
+    go ls =
+       let (h,t) = splitAt chunkLines ls
+       in h : go t
+
+-- cabal/stack: compile RTS threaded
 main :: IO ()
 main = do
     cpus <- getNumCapabilities
@@ -1313,8 +1328,10 @@ main = do
             Done theRest hdrs -> (hdrs, theRest)
         aliases = aliasesToStrip hdrs
         keep = aliasesToKeep hdrs
-    ch <- newChan
-    worker <- forkIO (filterChunks ch theRest 0 1)
-    mapM_ putStr (getChanContents ch)
+        chunks = chunk theRest
+
+    let outputs = filterChunks cpus chunks keep
+    mapM_ B.putStr outputs
+
     -- mapM_ B.putStrLn $ eatExtraTimestamps . filter (isKeep keep) . B.lines $ theRest
     -- print $ parseOnly parseSignal theRest
