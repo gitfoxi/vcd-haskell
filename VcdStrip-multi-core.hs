@@ -24,6 +24,7 @@ import           Control.Monad (when, replicateM)
 import           Control.Parallel.Strategies
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
+import           Data.ByteString.Short (fromShort, toShort, ShortByteString)
 import           Data.List (transpose)
 import qualified Data.Traversable as Traversable
 import qualified Data.Set as Set
@@ -32,6 +33,8 @@ import           System.IO (stderr, hPutStrLn)
 import           System.IO.Unsafe
 
 import Vcd
+
+import Debug.Trace
 
 testParseSignal s = do
     let sig = parse parseSignal s
@@ -1259,14 +1262,14 @@ isGood badsigs l =
    || a == '$'
    || not (Set.member sig badsigs)
 
+{-# INLINE isKeep #-}
 isKeep goodsigs l =
-  let a = B.head l
-      sig = B.drop 1 l
+  let (a, sig) = B.splitAt 1 l
       blank = B.null l
   in
       blank
-   || a == '#'
-   || a == '$'
+   || a == "#"
+   || a == "$"
    || Set.member sig goodsigs
 
 
@@ -1276,6 +1279,7 @@ warn s = hPutStrLn stderr $ "Warning: " ++ s
 isTimestamp :: B.ByteString -> Bool
 isTimestamp a = "#" `B.isPrefixOf` a
 
+-- BUG: some timestamps aren't getting eaten
 eatExtraTimestamps :: [B.ByteString] -> [B.ByteString]
 eatExtraTimestamps (a:b:cs) =
   if isTimestamp a && isTimestamp b
@@ -1284,27 +1288,29 @@ eatExtraTimestamps (a:b:cs) =
 eatExtraTimestamps a = a
 
 -- chunkSize = 64000
-chunkLines = 16000
+chunkLines = 4000
 
+{-# INLINE filterChunk #-}
 filterChunk
  :: Set.Set B.ByteString -- ^ signal ids to keep
- -> [B.ByteString] -- ^ A chunk already split into lines
+ -> [ShortByteString] -- ^ A chunk already split into lines
  -> B.ByteString
-filterChunk keep =
-      B.unlines . eatExtraTimestamps . filter (isKeep keep)
+filterChunk keep bs =
+      bs `seq` (B.unlines . eatExtraTimestamps . filter (isKeep keep) . (map (fromShort $!) ) $ bs)
 
-filterChunks :: Int -> [[B.ByteString]] -> Set.Set B.ByteString -> [B.ByteString]
+filterChunks :: Int -> [[ShortByteString]] -> Set.Set B.ByteString -> [B.ByteString]
 filterChunks nThreads bss keep =
-  parMap rpar (filterChunk keep) bss
+  withStrategy (parBuffer nThreads rdeepseq) . map (filterChunk keep) $ bss
 
-
-chunk :: B.ByteString -> [[B.ByteString]]
-chunk = go . B.lines
+{-# INLINE chunk #-}
+chunk :: B.ByteString -> [[ShortByteString]]
+chunk = go . map toShort . B.lines
   where
+    {-# INLINE go #-}
     go [] = []
     go ls =
        let (h,t) = splitAt chunkLines ls
-       in h : go t
+       in h `seq` h : go t
 
 -- cabal/stack: compile RTS threaded
 main :: IO ()

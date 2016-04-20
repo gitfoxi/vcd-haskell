@@ -106,7 +106,9 @@ skipStupidVar :: Parser Header
 skipStupidVar = do
     keyword "$var"
     _ <- (keyword "wire" >> mzero) <|> -- fail on legit wire probably can't arrive here
-        manyTill anyChar (keyword "$end")
+    -- for faster failing go to end of line
+        takeWhile (not . isEndOfLine) >> char '\n'
+    -- manyTill anyChar (keyword "$end")
     return Ignored
 
 filterIgnored :: [Header] -> [Header]
