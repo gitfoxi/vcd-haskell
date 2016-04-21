@@ -17,6 +17,7 @@
 --  YAML config
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BangPatterns #-}
 
 import           Control.Concurrent -- (getNumCapabilities, Chan, writeChan, newChan, forkIO, getChanContents)
 import           Control.Concurrent.MVar
@@ -33,6 +34,7 @@ import qualified Data.Traversable as Traversable
 -- import qualified Data.Set as Set
 import qualified Data.HashSet as Set
 -- import qualified Data.Vector.Storable.ByteString.Char8 as V
+import qualified Data.Vector as V
 import           System.Environment (getArgs)
 import           System.IO (stderr, hPutStrLn)
 import           System.IO.Unsafe
@@ -1271,7 +1273,7 @@ isGood badsigs l =
    || not (Set.member sig badsigs)
 
 {-# INLINE isKeep #-}
-isKeep goodsigs l =
+isKeep !goodsigs !l =
   let (a, sig) = B.splitAt 1 l
       blank = B.null l
   in
@@ -1295,7 +1297,7 @@ eatExtraTimestamps (a:b:cs) =
     else a : eatExtraTimestamps (b:cs)
 eatExtraTimestamps a = a
 
-chunkSize = 64000
+chunkSize = 512000
 -- chunkLines = 4000
 
 -- {-# INLINE filterChunk #-}
@@ -1304,10 +1306,9 @@ filterChunk
  -> B.ByteString -- ^ A chunk
  -> B.ByteString
 filterChunk keep bs =
-      ( B.unlines . eatExtraTimestamps . filter (isKeep keep) . mylines $ bs)
+      B.unlines . eatExtraTimestamps . (filter (isKeep keep $!) $!) . mylines $! bs
     where
-      bl = {-# SCC lines #-}  B.lines $ bs
-      mylines = {-# SCC mylines #-} B.split '\n'
+      mylines = {-# SCC mylines #-} B.lines
 
 filterChunks :: Int -> [B.ByteString] -> Set B.ByteString -> [B.ByteString]
 filterChunks nThreads bs keep =
@@ -1319,7 +1320,7 @@ chunk bs =
   if B.null bs
     then []
     else
-        let (first, rest) = takeBreakByte chunkSize '\n' bs
+        let (!first, rest) = takeBreakByte chunkSize '\n' bs
         in first : chunk rest
 
 {-# INLINE takeBreakByte #-}
