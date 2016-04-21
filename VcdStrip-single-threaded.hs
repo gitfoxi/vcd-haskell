@@ -1285,8 +1285,7 @@ main = do
     when (cpus < 48) $
       warn $ "Only " ++ show cpus ++ " cpus detected. We recommend at least 48."
 
-    [filename] <- getArgs
-    f <- B.readFile filename
+    f <- B.getContents
     let res = parse parseAllHeaders f
         (hdrs, theRest) =
           case res of

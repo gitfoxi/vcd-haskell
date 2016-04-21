@@ -47,7 +47,8 @@ cabal-version:       >=1.10
 
 
 library
-  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -with-rtsopts=-N -rtsopts -O2 -prof -fprof-auto
+  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -with-rtsopts=-N -rtsopts -O2
+ -- -fllvm
  --  -eventlog
   -- Modules exported by the library.
   exposed-modules:     Vcd
@@ -68,13 +69,16 @@ library
   default-language:    Haskell2010
 
 Executable VcdStrip-single-threaded
+  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -rtsopts -O2
+  -- -fllvm
   Main-Is:        VcdStrip-single-threaded.hs
   Hs-Source-Dirs: .
   build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers
 
 Executable VcdStrip-multi-core
-  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -with-rtsopts=-N -rtsopts -O2 -prof -fprof-auto
- -- -eventlog
+  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -with-rtsopts=-N -rtsopts -O2 -eventlog
+  -- -fllvm
   Main-Is:        VcdStrip-multi-core.hs
   Hs-Source-Dirs: .
   build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers, parallel, unordered-containers
+  -- , vector-bytestring

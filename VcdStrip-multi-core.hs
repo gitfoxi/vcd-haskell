@@ -25,17 +25,24 @@ import           Control.Parallel.Strategies
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Short (fromShort, toShort, ShortByteString)
+import           Data.ByteString.Internal (ByteString(PS))
+import           Data.ByteString.Unsafe (unsafeTake, unsafeDrop)
 import           Data.List (transpose)
 import qualified Data.Traversable as Traversable
+-- Which set is faster?
 -- import qualified Data.Set as Set
 import qualified Data.HashSet as Set
+-- import qualified Data.Vector.Storable.ByteString.Char8 as V
 import           System.Environment (getArgs)
 import           System.IO (stderr, hPutStrLn)
 import           System.IO.Unsafe
 
+
 import Vcd
 
 import Debug.Trace
+
+type Set = Set.HashSet
 
 testParseSignal s = do
     let sig = parse parseSignal s
@@ -54,7 +61,7 @@ testParseSignal s = do
             putStrLn "Leftover"
             print theRest
 
-sigsToKeep :: Set.HashSet B.ByteString
+sigsToKeep :: Set B.ByteString
 sigsToKeep = Set.fromList
   [ "usb0_dm"
   ,"usb0_dp"
@@ -1177,7 +1184,7 @@ sigsToKeep = Set.fromList
   ,"chip_reset_out_n"
   ,"thermal_trip_n"
   ]
-sigsToStrip :: Set.HashSet B.ByteString
+sigsToStrip :: Set B.ByteString
 sigsToStrip = Set.fromList
  [ "sb0_refclk_m"
  ,"sb0_refclk_p"
@@ -1229,12 +1236,12 @@ headersToList (h@(Scope _ hs):hss) = h:headersToList hs ++ headersToList hss
 headersToList             (h:hs)   = h:headersToList hs
 headersToList              []      = []
 
-aliasesToStrip :: [Header] -> Set.HashSet B.ByteString
+aliasesToStrip :: [Header] -> Set B.ByteString
 aliasesToStrip = aliasesFromSigs sigsToStrip
 
 aliasesToKeep = aliasesFromSigs sigsToKeep
 
-aliasesFromSigs :: Set.HashSet B.ByteString -> [Header] -> Set.HashSet B.ByteString
+aliasesFromSigs :: Set B.ByteString -> [Header] -> Set B.ByteString
 aliasesFromSigs sigs =
     Set.fromList .
     map alias .
@@ -1247,7 +1254,7 @@ aliasesFromSigs sigs =
     isWire (Wire _ _ _)  = True
     isWire _             = False
 
-filterSig :: Set.HashSet B.ByteString -> B.ByteString -> B.ByteString
+filterSig :: Set B.ByteString -> B.ByteString -> B.ByteString
 filterSig badsigs =
     B.unlines
     . filter (isGood badsigs)
@@ -1293,25 +1300,44 @@ chunkSize = 64000
 
 -- {-# INLINE filterChunk #-}
 filterChunk
- :: Set.HashSet B.ByteString -- ^ signal ids to keep
+ :: Set B.ByteString -- ^ signal ids to keep
  -> B.ByteString -- ^ A chunk
  -> B.ByteString
 filterChunk keep bs =
-      bs `seq` (B.unlines . eatExtraTimestamps . filter (isKeep keep) . B.lines $ bs)
+      ( B.unlines . eatExtraTimestamps . filter (isKeep keep) . mylines $ bs)
+    where
+      bl = {-# SCC lines #-}  B.lines $ bs
+      mylines = {-# SCC mylines #-} B.split '\n'
 
-filterChunks :: Int -> [B.ByteString] -> Set.HashSet B.ByteString -> [B.ByteString]
+filterChunks :: Int -> [B.ByteString] -> Set B.ByteString -> [B.ByteString]
 filterChunks nThreads bs keep =
   withStrategy (parBuffer nThreads rdeepseq) . map (filterChunk keep) $ bs
 
 {-# INLINE chunk #-}
 chunk :: B.ByteString -> [B.ByteString]
-chunk = go
-  where
-      go "" = []
-      go bs = 
-        let (first, rest) = B.splitAt chunkSize bs
-            (finish, rest') = B.span (/= '\n') rest
-        in (B.concat [first, finish]) : go rest'
+chunk bs = 
+  if B.null bs
+    then []
+    else
+        let (first, rest) = takeBreakByte chunkSize '\n' bs
+        in first : chunk rest
+
+{-# INLINE takeBreakByte #-}
+-- combination of take and break so I can do chunks that end at newlines
+takeBreakByte :: Int -> Char -> ByteString -> (ByteString, ByteString)
+takeBreakByte n c ps@(PS x s l)
+    | n <= 0    = ("",ps)
+    | n >= l    = (ps,"")
+    | otherwise =
+       let p = PS x (s + n) (l - n)
+       in
+         case B.elemIndex c p of
+             Nothing -> (ps,"")
+             Just m  -> (unsafeTake (n + m) ps, unsafeDrop (n + m) ps)
+
+
+       -- PS x s n
+
 
 -- cabal/stack: compile RTS threaded
 main :: IO ()
