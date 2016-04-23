@@ -1,3 +1,9 @@
+
+other:
+
+groups:
+  - atest: [atest_east, atest_west]
+
 pins:
  - atest_east
  - atest_west

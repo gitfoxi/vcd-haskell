@@ -100,7 +100,7 @@ filterChunk
 filterChunk keep bs =
       B.unlines . eatExtraTimestamps . (filter (isKeep keep $!) $!) . mylines $! bs
     where
-      mylines = {-# SCC mylines #-} B.lines
+      mylines = B.lines
 
 filterChunks :: Int -> [B.ByteString] -> Set B.ByteString -> [B.ByteString]
 filterChunks nThreads bs keep =
@@ -131,9 +131,13 @@ takeBreakByte n c ps@(PS x s l)
 
        -- PS x s n
 
+type Pin = ByteString
+type Group = (ByteString,[Pin])
+
 data Config =
   Config
-    { pins :: [B.ByteString]
+    { pins :: [Pin]
+    , groups :: [Group]
     }
     deriving (Show, Generic)
 
