@@ -10,7 +10,7 @@ module Vcd
 
 -- Another attempt at VCD parsing
 
-import           Control.Applicative ( (<$>), (<|>), (*>), (<*>) )
+import           Control.Applicative ((<|>))
 import           Control.Monad (mzero)
 -- Lazy or Char8? Is there a Lazy.Char8?
 import           Data.Attoparsec.ByteString.Lazy
@@ -18,9 +18,7 @@ import           Data.Attoparsec.ByteString.Char8
                     hiding (takeWhile, parseTest, parse, Fail, Done, takeTill, inClass,
                             takeWhile1, satisfy)
 -- import           Data.Char (isSpace)
-import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.ByteString.Char8 as BS
-import qualified Data.Traversable as Traversable
 import           Data.Word (Word8)
 
 import Prelude hiding (takeWhile)
@@ -117,13 +115,13 @@ filterIgnored = filter (/= Ignored)
 parseHeaders :: Parser [Header]
 parseHeaders = do
     skipSpace
-    h <- many' $ choice 
+    h <- many' $ choice
         [ parseWire
         , parseComment
         , parseTimeScale
         , parseScope
         , skipStupidVar
-        ] 
+        ]
     return $ filterIgnored h
 
 parseAllHeaders :: Parser [Header]
@@ -153,4 +151,3 @@ parseChange = Change <$> satisfy (inClass "01lLhHmMxXzZ") <*> lexeme nonSpace
 
 nonSpace :: Parser BS.ByteString
 nonSpace = takeWhile1 (not . isSpace_w8)
-

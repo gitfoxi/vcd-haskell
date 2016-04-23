@@ -81,6 +81,6 @@ Executable VcdStrip-multi-core
   -- -eventlog
   -- -fllvm
   Main-Is:        VcdStrip-multi-core.hs
-  Hs-Source-Dirs: .
-  build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers, parallel, unordered-containers, vector
+  Hs-Source-Dirs: . src
+  build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers, parallel, unordered-containers, vector, yaml, text
   -- , vector-bytestring
