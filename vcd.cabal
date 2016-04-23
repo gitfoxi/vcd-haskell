@@ -68,15 +68,16 @@ library
   -- Base language which the package is written in.
   default-language:    Haskell2010
 
+
 Executable VcdStrip-single-threaded
-  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -rtsopts -O2
+  ghc-options: -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -rtsopts -O2
   -- -fllvm
   Main-Is:        VcdStrip-single-threaded.hs
   Hs-Source-Dirs: .
   build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers
 
 Executable VcdStrip-multi-core
-  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -with-rtsopts=-N -rtsopts -O2
+  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates "-with-rtsopts=-N24 -qb0 -qg0 -G2 -A10M -H8000M -qa" -rtsopts -O2
   -- -eventlog
   -- -fllvm
   Main-Is:        VcdStrip-multi-core.hs

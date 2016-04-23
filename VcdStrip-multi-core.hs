@@ -1312,7 +1312,7 @@ filterChunk keep bs =
 
 filterChunks :: Int -> [B.ByteString] -> Set B.ByteString -> [B.ByteString]
 filterChunks nThreads bs keep =
-  withStrategy (parBuffer nThreads rdeepseq) . map (filterChunk keep) $ bs
+  withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keep) $ bs
 
 {-# INLINE chunk #-}
 chunk :: B.ByteString -> [B.ByteString]
