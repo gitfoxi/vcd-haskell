@@ -1,5 +1,6 @@
 
 -- TODO:
+--  mmap-bytestring to skip initial slow loading
 --  Decompress: .gz .bz2 .xz
 --  Compress: .bz2 using pbzip2; fallback to .gz
 --  Warn if they don't use .bz2 for input or output
@@ -18,7 +19,6 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 import           Control.Concurrent -- (getNumCapabilities, Chan, writeChan, newChan, forkIO, getChanContents)
 import           Control.Monad (when)
@@ -28,20 +28,18 @@ import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Internal (ByteString(PS))
 import           Data.ByteString.Unsafe (unsafeTake, unsafeDrop)
 -- Which set is faster?
--- import qualified Data.Set as Set
 import qualified Data.HashSet as Set
 -- import qualified Data.Vector.Storable.ByteString.Char8 as V
-import           Data.Yaml.Char8 as Yaml
-import           GHC.Generics
 import           System.Environment (getArgs)
 import           System.IO (stderr, hPutStrLn)
 
+import Config
 import Vcd
 
 type Set = Set.HashSet
 
 
--- TODO: ++ is slow
+-- TODO: ++ is slow (but is only called once per scope)
 headersToList :: [Header] -> [Header]
 headersToList (h@(Scope _ hs):hss) = h:headersToList hs ++ headersToList hss
 headersToList             (h:hs)   = h:headersToList hs
@@ -131,30 +129,16 @@ takeBreakByte n c ps@(PS x s l)
 
        -- PS x s n
 
-type Pin = ByteString
-type Group = (ByteString,[Pin])
-
-data Config =
-  Config
-    { pins :: [Pin]
-    , groups :: [Group]
-    }
-    deriving (Show, Generic)
-
-instance FromJSON Config
-
 -- cabal/stack: compile RTS threaded
 main :: IO ()
 main = do
     [configFile] <- getArgs
-    configFileContents <- B.readFile configFile
-    let
-        config :: Config
-        config =
-         case decodeEither' configFileContents of
-          Right c -> c
-          Left e -> error $ configFile ++ ": " ++ show e
-        sigsToKeep = Set.fromList (pins config)
+    config <- readConfigFile configFile
+
+    print config -- test
+
+    -- TODO: process ports; don't keep clocks
+    let sigsToKeep = Set.fromList (pins config)
 
     cpus <- getNumCapabilities
     when (cpus < 48) $

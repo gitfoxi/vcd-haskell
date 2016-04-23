@@ -6,10 +6,11 @@ module Data.Yaml.Char8
   where
 
 import           Control.Monad (mzero)
+import           Data.Aeson.Types (typeMismatch)
 import           Data.ByteString.Char8
 import           Data.Text.Encoding (encodeUtf8)
 import           Data.Yaml as Yaml
 
 instance FromJSON ByteString where
   parseJSON (Yaml.String t) = return $ encodeUtf8 t
-  parseJSON _ = mzero
+  parseJSON invalid = typeMismatch "String" invalid
