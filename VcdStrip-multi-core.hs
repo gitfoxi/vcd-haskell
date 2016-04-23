@@ -20,13 +20,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
 
+module Main where
+
 import           Control.Concurrent -- (getNumCapabilities, Chan, writeChan, newChan, forkIO, getChanContents)
 import           Control.Monad (when)
 import           Control.Parallel.Strategies
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Internal (ByteString(PS))
-import           Data.ByteString.Unsafe (unsafeTake, unsafeDrop)
+import           Data.ByteString.Char8 (ByteString)
 -- Which set is faster?
 import qualified Data.HashSet as Set
 -- import qualified Data.Vector.Storable.ByteString.Char8 as V
@@ -34,6 +35,7 @@ import           System.Environment (getArgs)
 import           System.IO (stderr, hPutStrLn)
 
 import Config
+import Chunk
 import Vcd
 
 type Set = Set.HashSet
@@ -45,7 +47,7 @@ headersToList (h@(Scope _ hs):hss) = h:headersToList hs ++ headersToList hss
 headersToList             (h:hs)   = h:headersToList hs
 headersToList              []      = []
 
-aliasesFromSigs :: Set B.ByteString -> [Header] -> Set B.ByteString
+aliasesFromSigs :: Set ByteString -> [Header] -> Set ByteString
 aliasesFromSigs sigs =
     Set.fromList .
     map alias .
@@ -75,11 +77,11 @@ isKeep !goodsigs !l =
 warn :: String -> IO ()
 warn s = hPutStrLn stderr $ "Warning: " ++ s
 
-isTimestamp :: B.ByteString -> Bool
+isTimestamp :: ByteString -> Bool
 isTimestamp a = "#" `B.isPrefixOf` a
 
 -- BUG: some timestamps aren't getting eaten
-eatExtraTimestamps :: [B.ByteString] -> [B.ByteString]
+eatExtraTimestamps :: [ByteString] -> [ByteString]
 eatExtraTimestamps (a:b:cs) =
   if isTimestamp a && isTimestamp b
     then eatExtraTimestamps (b:cs)
@@ -92,39 +94,17 @@ chunkSize = 512000
 
 -- {-# INLINE filterChunk #-}
 filterChunk
- :: Set B.ByteString -- ^ signal ids to keep
- -> B.ByteString -- ^ A chunk
- -> B.ByteString
+ :: Set ByteString -- ^ signal ids to keep
+ -> ByteString -- ^ A chunk
+ -> ByteString
 filterChunk keep bs =
       B.unlines . eatExtraTimestamps . (filter (isKeep keep $!) $!) . mylines $! bs
     where
       mylines = B.lines
 
-filterChunks :: Int -> [B.ByteString] -> Set B.ByteString -> [B.ByteString]
+filterChunks :: Int -> [ByteString] -> Set ByteString -> [ByteString]
 filterChunks nThreads bs keep =
   withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keep) $ bs
-
-{-# INLINE chunk #-}
-chunk :: B.ByteString -> [B.ByteString]
-chunk bs =
-  if B.null bs
-    then []
-    else
-        let (!first, rest) = takeBreakByte chunkSize '\n' bs
-        in first : chunk rest
-
-{-# INLINE takeBreakByte #-}
--- combination of take and break so I can do chunks that end at newlines
-takeBreakByte :: Int -> Char -> ByteString -> (ByteString, ByteString)
-takeBreakByte n c ps@(PS x s l)
-    | n <= 0    = ("",ps)
-    | n >= l    = (ps,"")
-    | otherwise =
-       let p = PS x (s + n) (l - n)
-       in
-         case B.elemIndex c p of
-             Nothing -> (ps,"")
-             Just m  -> (unsafeTake (n + m) ps, unsafeDrop (n + m) ps)
 
 
        -- PS x s n
@@ -163,7 +143,7 @@ main = do
 
         aliasesToKeep = aliasesFromSigs sigsToKeep
         keep = aliasesToKeep hdrs
-        chunks = chunk theRest
+        chunks = chunk chunkSize theRest
 
     let outputs = filterChunks cpus chunks keep
     mapM_ B.putStr outputs
