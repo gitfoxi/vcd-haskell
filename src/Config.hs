@@ -40,9 +40,9 @@ data PinConfig =
 data State = L | H | D | U | N | Z | X
     deriving (Show, Generic)
 
--- TODO: why can't I use bytestring for a map key?
 type Groups = Map ByteString Pins
 
+-- TODO: Might make some sets optional, adding another Maybe layer or use more Set
 data Config =
   Config
     { all'pins :: PinConfigs

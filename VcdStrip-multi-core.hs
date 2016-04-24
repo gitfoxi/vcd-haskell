@@ -28,22 +28,26 @@ import           Control.Parallel.Strategies
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString, unpack)
+import           Data.ByteString.Builder (hPutBuilder)
 -- Which set is faster?
 import qualified Data.HashSet as Set
 import qualified Data.Map as Map
 import           Data.Maybe (isNothing, fromJust)
 -- import qualified Data.Vector.Storable.ByteString.Char8 as V
 import           System.Environment (getArgs)
-import           System.IO (stderr, hPutStrLn)
+import           System.IO (stderr, hPutStrLn, stdout)
 
 import Config
 import Chunk
 import Vcd
 
+import Debug.Trace
+
 type Set = Set.HashSet
 
 
 -- TODO: ++ is slow (but is only called once per scope)
+-- Make Header Foldable and use Data.Foldable.toList
 headersToList :: [Header] -> [Header]
 headersToList (h@(Scope _ hs):hss) = h:headersToList hs ++ headersToList hss
 headersToList             (h:hs)   = h:headersToList hs
@@ -56,13 +60,15 @@ aliasesFromSigs sigs =
     filter (flip Set.member sigs . name) .
     filter isWire .
     headersToList
-  where
-    name  (Wire _ _ nm)  = nm
-    name  _              = undefined
-    alias  (Wire _ al _) = al
-    alias  _             = undefined
-    isWire (Wire _ _ _)  = True
-    isWire _             = False
+
+name  (Wire _ _ nm)  = nm
+name  _              = undefined
+
+alias  (Wire _ al _) = al
+alias  _             = undefined
+
+isWire (Wire _ _ _)  = True
+isWire _             = False
 
 {-# INLINE isKeep #-}
 isKeep :: Set.HashSet ByteString -> ByteString -> Bool
@@ -108,8 +114,12 @@ filterChunks nThreads bs keep =
   withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keep) $ bs
 
 keepSigs :: Config -> Set Pin
-keepSigs conf = Set.fromList . filter (not . forced) . concat .  fmap pins . data'ports $ conf
+keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
   where
+    data'port'pins = filter (not . forced) . concat .  fmap pins . data'ports $ conf
+    jtag'pins =
+      let  jt = jtag'port $ conf
+      in mux jt ++ map (\f -> f jt) [tdi, tck, tdo, tms]
     forced :: Pin -> Bool
     -- TODO: Error if pin not found in all'pins
     --       Lens
@@ -122,13 +132,14 @@ keepSigs conf = Set.fromList . filter (not . forced) . concat .  fmap pins . dat
             Nothing -> False
             Just pc -> not . isNothing . force $ pc
 
+
 -- cabal/stack: compile RTS threaded
 main :: IO ()
 main = do
     [configFile] <- getArgs
     config <- readConfigFile configFile
 
-    print config -- test
+    -- print config -- test
 
     -- TODO: process ports; don't keep clocks
     let sigsToKeep = keepSigs config
@@ -154,11 +165,18 @@ main = do
                      ++ "EOF during header"
             Done theRest' hdrs' -> (hdrs', theRest')
 
+        hdrsOut =
+          filterHeaders
+            (\h -> (not . isWire) h || Set.member (name h) sigsToKeep)
+            hdrs
+
         aliasesToKeep = aliasesFromSigs sigsToKeep
         keep = aliasesToKeep hdrs
         chunks = chunk chunkSize theRest
 
     let outputs = filterChunks cpus chunks keep
+
+    hPutBuilder stdout (foldMap render hdrsOut)
     mapM_ B.putStr outputs
 
     -- mapM_ B.putStrLn $ eatExtraTimestamps . filter (isKeep keep) . B.lines $ theRest

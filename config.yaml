@@ -161,6 +161,13 @@ data'ports:
     period'ns: 200
     sampling'offset'ns: 0
     pins:
+      #      - jtg_tck
+      #      - jtg_tdi
+      #      - jtg_tdo
+      #      - jtg_tms
+      #      - jtg_dap_trst_n
+      #      - jtg_trst_n
+      #      - jtg_usb_trst_n
       - atest_east
       - atest_west
       - chip_reset_n
