@@ -27,9 +27,11 @@ import           Control.Monad (when)
 import           Control.Parallel.Strategies
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
+import           Data.ByteString.Char8 (ByteString, unpack)
 -- Which set is faster?
 import qualified Data.HashSet as Set
+import qualified Data.Map as Map
+import           Data.Maybe (isNothing, fromJust)
 -- import qualified Data.Vector.Storable.ByteString.Char8 as V
 import           System.Environment (getArgs)
 import           System.IO (stderr, hPutStrLn)
@@ -105,8 +107,20 @@ filterChunks :: Int -> [ByteString] -> Set ByteString -> [ByteString]
 filterChunks nThreads bs keep =
   withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keep) $ bs
 
-
-       -- PS x s n
+keepSigs :: Config -> Set Pin
+keepSigs conf = Set.fromList . filter (not . forced) . concat .  fmap pins . data'ports $ conf
+  where
+    forced :: Pin -> Bool
+    -- TODO: Error if pin not found in all'pins
+    --       Lens
+    forced k =
+      let mmpc = Map.lookup k (all'pins conf)
+      in case mmpc of
+        Nothing -> error $ "Missing " ++ B.unpack k ++ " in config"
+        Just mpc ->
+          case mpc of
+            Nothing -> False
+            Just pc -> not . isNothing . force $ pc
 
 -- cabal/stack: compile RTS threaded
 main :: IO ()
@@ -117,7 +131,7 @@ main = do
     print config -- test
 
     -- TODO: process ports; don't keep clocks
-    let sigsToKeep = Set.fromList (all'pins config)
+    let sigsToKeep = keepSigs config
 
     cpus <- getNumCapabilities
     when (cpus < 48) $

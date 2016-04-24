@@ -3,11 +3,18 @@
 
 module Config
   ( Config(..)
-  , Pin
-  , Groups
+  , Clock(..)
   , Clocks
-  , Clock
-  , SingleEndedOrDiff
+  , Groups
+  , Jtag(..)
+  , Pin
+  , Pins
+  , PinConfig(..)
+  , PinConfigs
+  , Port(..)
+  , Ports
+  , SingleEndedOrDiff(..)
+  , State(..)
   
   , readConfigFile
   ) where
@@ -20,13 +27,25 @@ import           GHC.Generics
 
 
 type Pin = ByteString
+type Pins = [Pin]
+
+type PinConfigs = Map ByteString (Maybe PinConfig)
+data PinConfig =
+  PinConfig
+    { vcd'name :: Maybe ByteString
+    , force :: Maybe State
+    }
+    deriving (Show, Generic)
+
+data State = L | H | D | U | N | Z | X
+    deriving (Show, Generic)
 
 -- TODO: why can't I use bytestring for a map key?
-type Groups = Map String [Pin]
+type Groups = Map ByteString Pins
 
 data Config =
   Config
-    { all'pins :: [Pin]
+    { all'pins :: PinConfigs
     , groups :: Groups
     , data'ports :: Ports
     , clock'ports :: Clocks
@@ -44,11 +63,11 @@ data Jtag =
     }
     deriving (Show, Generic)
 
-type Ports = Map String Port
+type Ports = Map ByteString Port
 data Port =
   Port
-    { period'ns :: Double
-    , sampling'offset'ns :: Double
+    { period'ns :: !Double
+    , sampling'offset'ns :: !Double
     , pins :: [Pin]
     }
     deriving (Show, Generic)
@@ -56,17 +75,17 @@ data Port =
 data SingleEndedOrDiff = SingleEnded | Differential
     deriving (Show, Generic)
 
-type Clocks = Map String Clock
+type Clocks = Map ByteString Clock
 data Clock =
     SEClock
     { pin :: Pin
-    , clock'period'ns :: Double
+    , clock'period'ns :: !Double
     , rising'edge'ns :: Maybe Double
     }
   | DiffClock
     { p'pin :: Pin
     , n'pin :: Pin
-    , clock'period'ns :: Double
+    , clock'period'ns :: !Double
     , rising'edge'ns :: Maybe Double
     }
     deriving (Show, Generic)
@@ -75,8 +94,8 @@ instance FromJSON Config
 instance FromJSON Clock
 instance FromJSON Port
 instance FromJSON Jtag
-
-instance ToJSON Clock
+instance FromJSON PinConfig
+instance FromJSON State
 
 readConfigFile :: FilePath -> IO Config
 readConfigFile configFile = do
