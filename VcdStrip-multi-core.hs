@@ -80,7 +80,6 @@ warn s = hPutStrLn stderr $ "Warning: " ++ s
 isTimestamp :: ByteString -> Bool
 isTimestamp a = "#" `B.isPrefixOf` a
 
--- BUG: some timestamps aren't getting eaten
 eatExtraTimestamps :: [ByteString] -> [ByteString]
 eatExtraTimestamps (a:b:cs) =
   if isTimestamp a && isTimestamp b
@@ -118,7 +117,7 @@ main = do
     print config -- test
 
     -- TODO: process ports; don't keep clocks
-    let sigsToKeep = Set.fromList (pins config)
+    let sigsToKeep = Set.fromList (all'pins config)
 
     cpus <- getNumCapabilities
     when (cpus < 48) $
