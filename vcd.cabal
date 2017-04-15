@@ -109,8 +109,7 @@ Executable VcdStrip-multi-core
                         vector,
                         yaml,
                         text,
-                        aeson,
-                        PerfectHash
+                        aeson
 
   -- , vector-bytestring
 

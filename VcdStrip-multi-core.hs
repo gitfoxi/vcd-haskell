@@ -30,7 +30,8 @@ import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
 import           Data.ByteString.Builder (hPutBuilder)
 -- Which set is faster?
--- TODO: Try bloom filter, perfect hash, intset
+-- TODO: Try DFA, grep intset
+-- DONE: bloom filter, perfect hash suck; bytestring-trie disclaims it is worse that HashSet
 import qualified Data.HashSet as Set
 import qualified Data.Map as Map
 import           Data.Maybe (isJust)
