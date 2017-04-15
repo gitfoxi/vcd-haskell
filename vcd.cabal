@@ -47,7 +47,10 @@ cabal-version:       >=1.10
 
 
 library
-  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -with-rtsopts=-N -rtsopts
+  -- without profiling
+  ghc-options: -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
+  -- with profiling:
+  -- ghc-options: -prof -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -with-rtsopts=-N -rtsopts
   -- -O2
  -- -fllvm
  --  -eventlog
@@ -57,11 +60,16 @@ library
   -- Modules included in this library but not exported.
   -- other-modules:
 
+  
+
   -- LANGUAGE extensions used by modules in this package.
   other-extensions:    OverloadedStrings
 
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11
+  build-depends:       base,
+                       attoparsec,
+                       bytestring,
+                       containers
 
   -- Directories containing source files.
   hs-source-dirs:      src
@@ -76,7 +84,13 @@ Executable VcdStrip-single-threaded
   -- -fllvm
   Main-Is:        VcdStrip-single-threaded.hs
   Hs-Source-Dirs: .
-  build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers
+  build-depends:       base,
+                       attoparsec,
+                       bytestring,
+                       vcd,
+                       containers
+
+  default-language:    Haskell2010
 
 Executable VcdStrip-multi-core
   ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates "-with-rtsopts=-N -qb0 -qg0 -G2 -A10M -H8000M -qa" -rtsopts
@@ -85,5 +99,25 @@ Executable VcdStrip-multi-core
   -- -fllvm
   Main-Is:        VcdStrip-multi-core.hs
   Hs-Source-Dirs: . src
-  build-depends:       base >=4.8 && <4.9, attoparsec >=0.13 && <0.14, bytestring >=0.10 && <0.11, vcd, containers, parallel, unordered-containers, vector, yaml, text, aeson
+  build-depends:        base,
+                        attoparsec,
+                        bytestring,
+                        vcd,
+                        containers,
+                        parallel,
+                        unordered-containers,
+                        vector,
+                        yaml,
+                        text,
+                        aeson,
+                        PerfectHash
+
   -- , vector-bytestring
+
+  default-language:    Haskell2010
+
+  other-modules:       
+        Chunk
+        Config
+        Data.Yaml.Char8
+        Vcd

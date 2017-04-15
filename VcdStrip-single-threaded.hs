@@ -22,12 +22,11 @@ import           Control.Concurrent (getNumCapabilities)
 import           Control.Monad (when)
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
-import qualified Data.Traversable as Traversable
 import qualified Data.Set as Set
-import           System.Environment (getArgs)
 
 import Vcd
 
+testParseSignal :: B.ByteString -> IO ()
 testParseSignal s = do
     let sig = parse parseSignal s
     case sig of
@@ -44,6 +43,7 @@ testParseSignal s = do
             print sigs
             putStrLn "Leftover"
             print theRest
+        Partial _ -> error "partial parse"
 
 sigsToKeep :: Set.Set B.ByteString
 sigsToKeep = Set.fromList
@@ -1216,6 +1216,7 @@ sigsToStrip = Set.fromList
  ]
 
 -- TODO: ++ is slow
+headersToList :: [Header] -> [Header]
 headersToList (h@(Scope _ hs):hss) = h:headersToList hs ++ headersToList hss
 headersToList             (h:hs)   = h:headersToList hs
 headersToList              []      = []
@@ -1223,6 +1224,7 @@ headersToList              []      = []
 aliasesToStrip :: [Header] -> Set.Set B.ByteString
 aliasesToStrip = aliasesFromSigs sigsToStrip 
 
+aliasesToKeep :: [Header] -> Set.Set B.ByteString
 aliasesToKeep = aliasesFromSigs sigsToKeep
 
 aliasesFromSigs :: Set.Set B.ByteString -> [Header] -> Set.Set B.ByteString

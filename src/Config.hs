@@ -15,7 +15,6 @@ module Config
   , Ports
   , SingleEndedOrDiff(..)
   , State(..)
-  
   , readConfigFile
   ) where
 

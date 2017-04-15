@@ -27,12 +27,13 @@ import           Control.Monad (when)
 import           Control.Parallel.Strategies
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString, unpack)
+import           Data.ByteString.Char8 (ByteString)
 import           Data.ByteString.Builder (hPutBuilder)
 -- Which set is faster?
+-- TODO: Try bloom filter, perfect hash, intset
 import qualified Data.HashSet as Set
 import qualified Data.Map as Map
-import           Data.Maybe (isNothing, fromJust)
+import           Data.Maybe (isJust)
 -- import qualified Data.Vector.Storable.ByteString.Char8 as V
 import           System.Environment (getArgs)
 import           System.IO (stderr, hPutStrLn, stdout)
@@ -40,8 +41,6 @@ import           System.IO (stderr, hPutStrLn, stdout)
 import Config
 import Chunk
 import Vcd
-
-import Debug.Trace
 
 type Set = Set.HashSet
 
@@ -61,13 +60,16 @@ aliasesFromSigs sigs =
     filter isWire .
     headersToList
 
+name :: Header -> ByteString
 name  (Wire _ _ nm)  = nm
 name  _              = undefined
 
+alias :: Header -> ByteString
 alias  (Wire _ al _) = al
 alias  _             = undefined
 
-isWire (Wire _ _ _)  = True
+isWire :: Header -> Bool
+isWire Wire{} = True
 isWire _             = False
 
 {-# INLINE isKeep #-}
@@ -116,9 +118,9 @@ filterChunks nThreads bs keep =
 keepSigs :: Config -> Set Pin
 keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
   where
-    data'port'pins = filter (not . forced) . concat .  fmap pins . data'ports $ conf
+    data'port'pins = filter (not . forced) . concatMap pins . data'ports $ conf
     jtag'pins =
-      let  jt = jtag'port $ conf
+      let  jt = jtag'port conf
       in mux jt ++ map (\f -> f jt) [tdi, tck, tdo, tms]
     forced :: Pin -> Bool
     -- TODO: Error if pin not found in all'pins
@@ -130,7 +132,7 @@ keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
         Just mpc ->
           case mpc of
             Nothing -> False
-            Just pc -> not . isNothing . force $ pc
+            Just pc -> isJust . force $ pc
 
 
 -- cabal/stack: compile RTS threaded

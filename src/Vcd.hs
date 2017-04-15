@@ -29,8 +29,6 @@ import           Data.Word (Word8)
 
 import Prelude hiding (takeWhile)
 
-import Debug.Trace
-
 type FemptoSeconds = Int
 
 -- TODO: Define structure separately from contents. This is basically a rosetree that can contain certain things
@@ -50,12 +48,12 @@ render :: Header -> Builder
 render (Comment bs) = mconcat . map byteString $ ["$comment ", bs, " $end\n"]
 render (TimeScale i) = mconcat [byteString "$timescale ", intDec i, byteString " fs $end\n"]
 render (Wire i a b) = mconcat [byteString "$var wire ", intDec i, byteString " ", byteString a, byteString " ", byteString b, byteString " $end\n"]
-render (Ignored) = byteString ""
+render Ignored = byteString ""
 render (Scope a hs) = byteString "$scope module " <> byteString a <> " $end\n"  <> foldMap render hs <> byteString "$upscope $end\n"
 
 -- TODO: Why am I specializing filter for headers? Use a Foldable/Traversable structure
 filterHeaders :: (Header -> Bool) -> [Header] -> [Header]
-filterHeaders f [] = []
+filterHeaders _ [] = []
 filterHeaders f ((s@(Scope nm sh)):hss)
   | f s = Scope nm (filterHeaders f sh) : filterHeaders f hss
   | otherwise = filterHeaders f hss
