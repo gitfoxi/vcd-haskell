@@ -18,6 +18,8 @@
 --  YAML config
 --
 -- Try memoizing each chunk; a smaller set of already-seen signals can be discarded faster maybe (tried; no help)
+--
+-- TODO: Try benchmarking on a computer with many cores. Only getting 2x speedup on my 4-core computer
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
@@ -46,6 +48,7 @@ import Vcd
 
 import Data.List (groupBy)
 import Debug.Trace
+import System.IO.MMap
 
 type Set = Set.HashSet
 
@@ -149,15 +152,17 @@ chunkSize = 262144
 filterChunk
  :: Set.HashSet ByteString -- ^ signal ids to keep
  -> ByteString -- ^ A chunk
- -> ByteString
+ -> [ ByteString ]
 filterChunk keep bs =
-      B.unlines . eatExtraTimestamps . (filter (isKeep keep $!) $!) . mylines $! bs
+      (filter (isKeep keep $!) $!) . mylines $! bs
     where
       mylines = B.lines
 
-filterChunks :: Int -> [ByteString] -> Set ByteString -> [ByteString]
+filterChunks :: Int -> [ByteString] -> Set ByteString -> ByteString
 filterChunks nThreads bs keep =
-      withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keep) $ bs
+      -- map (filterChunk keep) $ bs  -- single-threaded debug
+      -- map B.unlines . map eatExtraTimestamps
+      (B.unlines . eatExtraTimestamps . concat ) ( withStrategy (parBuffer ( nThreads * 20 ) rdeepseq) . map (filterChunk keep) $ bs)
 
 keepSigs :: Config -> Set Pin
 keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
@@ -182,7 +187,7 @@ keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
 -- cabal/stack: compile RTS threaded
 main :: IO ()
 main = do
-    [configFile] <- getArgs
+    [configFile, vcdFile] <- getArgs
     config <- readConfigFile configFile
 
     -- print config -- test
@@ -197,7 +202,9 @@ main = do
     -- TODO: probably a big pause while we read the whole file
     -- If its a real file, mmap it
     -- If its a stream, read chunks
-    f <- B.getContents
+    -- Read a stream
+    -- f <- B.getContents
+    f <- mmapFileByteString vcdFile Nothing
     let res = parse parseAllHeaders f
         (hdrs, theRest) =
           case res of
@@ -226,7 +233,7 @@ main = do
     let outputs = filterChunks cpus chunks keep
 
     hPutBuilder stdout (foldMap render hdrsOut)
-    mapM_ B.putStr outputs
+    B.putStr outputs
 
     -- mapM_ B.putStrLn $ eatExtraTimestamps . filter (isKeep keep) . B.lines $ theRest
     -- print $ parseOnly parseSignal theRest
