@@ -222,7 +222,6 @@ main = do
         aliasesToKeep = aliasesFromSigs sigsToKeep
         keep = aliasesToKeep hdrs
         chunks = chunk chunkSize theRest
-    mapM_ (\x -> B.putStr "XXXX" >> B.putStr x >> B.putStr "YYYY" ) chunks
 
     let outputs = filterChunks cpus chunks keep
 
