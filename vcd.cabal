@@ -48,7 +48,7 @@ cabal-version:       >=1.10
 
 library
   -- without profiling
-  ghc-options: -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -O2 -fllvm
+  ghc-options: -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -O2
 
   -- with profiling:
   -- ghc-options: -prof -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -with-rtsopts=-N -rtsopts
@@ -79,7 +79,7 @@ library
   default-language:    Haskell2010
 
 Executable v-strip
-  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates "-with-rtsopts=-N -qb0 -qg0 -G2 -A10M -H8000M -qa" -rtsopts -eventlog -O2 -fllvm
+  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates "-with-rtsopts=-N -qb0 -qg0 -G2 -A10M -H8000M -qa" -rtsopts -eventlog -O2
   Main-Is:        v-strip.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
