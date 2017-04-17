@@ -17,7 +17,7 @@
 --
 --  YAML config
 --
--- Try memoizing each chunk; a smaller set of already-seen signals can be discarded faster maybe
+-- Try memoizing each chunk; a smaller set of already-seen signals can be discarded faster maybe (tried; no help)
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
@@ -43,6 +43,9 @@ import           System.IO (stderr, hPutStrLn, stdout)
 import Config
 import Chunk
 import Vcd
+
+import Data.List (groupBy)
+import Debug.Trace
 
 type Set = Set.HashSet
 
@@ -112,6 +115,7 @@ warn s = hPutStrLn stderr $ "Warning: " ++ s
 -- isTimestamp line
 --
 -- True iff line represents a timestamp
+-- {-# INLINE isTimestamp #-}
 isTimestamp :: ByteString -> Bool
 isTimestamp a = "#" `B.isPrefixOf` a
 
@@ -119,11 +123,16 @@ isTimestamp a = "#" `B.isPrefixOf` a
 --
 -- Filters out any extra timestamps remaining in lines, defined as two or more timestamps with nothing in between. Keep the last in a list of timestamps
 eatExtraTimestamps :: [ByteString] -> [ByteString]
-eatExtraTimestamps (a:b:cs) =
-  if isTimestamp a && isTimestamp b
-    then eatExtraTimestamps (b:cs)
-    else a : eatExtraTimestamps (b:cs)
-eatExtraTimestamps a = a
+eatExtraTimestamps ls = map last (groupBy bothAreTimestamps ls)
+  where
+    bothAreTimestamps a b = isTimestamp a && isTimestamp b
+-- eatExtraTimestamps (a:b:cs) =
+--   if isTimestamp a
+--     then if isTimestamp b
+--       then eatExtraTimestamps (b:cs)
+--       else a : b : eatExtraTimestamps cs
+--     else a : eatExtraTimestamps (b:cs)
+-- eatExtraTimestamps a = a
 
 -- chunkSize
 -- Tune this parameter for performance
@@ -185,6 +194,9 @@ main = do
     when (cpus < 48) $
       warn $ "Only " ++ show cpus ++ " cpus detected. We recommend at least 48."
 
+    -- TODO: probably a big pause while we read the whole file
+    -- If its a real file, mmap it
+    -- If its a stream, read chunks
     f <- B.getContents
     let res = parse parseAllHeaders f
         (hdrs, theRest) =
@@ -210,6 +222,7 @@ main = do
         aliasesToKeep = aliasesFromSigs sigsToKeep
         keep = aliasesToKeep hdrs
         chunks = chunk chunkSize theRest
+    mapM_ (\x -> B.putStr "XXXX" >> B.putStr x >> B.putStr "YYYY" ) chunks
 
     let outputs = filterChunks cpus chunks keep
 
