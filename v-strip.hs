@@ -47,6 +47,8 @@ import Vcd
 
 import Data.IORef
 import System.IO.Unsafe
+import Data.Bits
+import Data.Char (ord)
 
 type Set = Set.HashSet
 
@@ -99,12 +101,12 @@ isWire _             = False
 -- - Timestamp
 -- - State change for a signal in goodSigs
 {-# INLINE isKeep #-}
-isKeep :: Set.HashSet ByteString -> ByteString -> Bool
+isKeep :: Integer -> ByteString -> Bool
 isKeep !goodsigs !l =
   let (a, sig) = B.splitAt 1 l
   in
    a == "#"
-   || Set.member sig goodsigs
+   || testBit goodsigs (hash sig)
 
 -- warn message
 --
@@ -136,37 +138,27 @@ chunkSize = 262144
 
 
 
-memoize falseTable f b = unsafePerformIO (
- let updateFalseTable falseTable b = modifyIORef falseTable (Set.insert b)
- in
-  do
-  ft <- (readIORef falseTable)
-  if (Set.member b ft)
-      then
-        return False
-      else
-        do
-         let r = f b
-         when (not r) (updateFalseTable falseTable b)
-         return r)
-
 -- filterChunk keepSigs Chunk
 --
 -- filters the signal lines in one chunk to discard massive amounts of crap
 -- {-# INLINE filterChunk #-}
 filterChunk
- :: Set ByteString -- ^ signal ids to keep
+ :: Integer -- ^ signal ids to keep
  -> ByteString -- ^ A chunk
  -> ByteString
 filterChunk keep bs =
-      B.unlines . eatExtraTimestamps . (filter (memoize falseTable (isKeep keep $!)) $!) . mylines $! bs
+      B.unlines . eatExtraTimestamps . (filter (isKeep keep $!) $!) . mylines $! bs
     where
       mylines = B.lines
-      falseTable = unsafePerformIO (newIORef Set.empty)
+
+hash :: ByteString -> Int
+hash = B.foldl (\acc c -> (acc `shift` 7) .|. (ord c)) 0
 
 filterChunks :: Int -> [ByteString] -> Set ByteString -> [ByteString]
 filterChunks nThreads bs keep =
-  withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keep) $ bs
+  let keepBitSet = foldl (\acc b -> setBit acc (hash b)) (0 :: Integer) (Set.toList keep) :: Integer
+  in
+      withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keepBitSet) $ bs
 
 keepSigs :: Config -> Set Pin
 keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)

@@ -95,7 +95,7 @@ Executable v-strip
                         yaml,
                         text,
                         aeson,
-                        memoize
+                        criterion
 
   -- , vector-bytestring
 
