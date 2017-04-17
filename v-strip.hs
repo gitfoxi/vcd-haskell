@@ -31,9 +31,8 @@ import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
 import           Data.ByteString.Builder (hPutBuilder)
--- Which set is faster?
--- TODO: Try DFA, grep intset
--- DONE: bloom filter, perfect hash suck; bytestring-trie disclaims it is worse that HashSet
+-- Which set is faster? ANSWER: hashset
+-- DONE: bloom filter, perfect hash suck; bytestring-trie disclaims it is worse that HashSet; bitset is same
 import qualified Data.HashSet as Set
 import qualified Data.Map as Map
 import           Data.Maybe (isJust)
@@ -44,11 +43,6 @@ import           System.IO (stderr, hPutStrLn, stdout)
 import Config
 import Chunk
 import Vcd
-
-import Data.IORef
-import System.IO.Unsafe
-import Data.Bits
-import Data.Char (ord)
 
 type Set = Set.HashSet
 
@@ -101,12 +95,13 @@ isWire _             = False
 -- - Timestamp
 -- - State change for a signal in goodSigs
 {-# INLINE isKeep #-}
-isKeep :: Integer -> ByteString -> Bool
+isKeep :: Set.HashSet ByteString -> ByteString -> Bool
 isKeep !goodsigs !l =
   let (a, sig) = B.splitAt 1 l
   in
    a == "#"
-   || testBit goodsigs (hash sig)
+   || Set.member sig goodsigs 
+
 
 -- warn message
 --
@@ -143,7 +138,7 @@ chunkSize = 262144
 -- filters the signal lines in one chunk to discard massive amounts of crap
 -- {-# INLINE filterChunk #-}
 filterChunk
- :: Integer -- ^ signal ids to keep
+ :: Set.HashSet ByteString -- ^ signal ids to keep
  -> ByteString -- ^ A chunk
  -> ByteString
 filterChunk keep bs =
@@ -151,14 +146,9 @@ filterChunk keep bs =
     where
       mylines = B.lines
 
-hash :: ByteString -> Int
-hash = B.foldl (\acc c -> (acc `shift` 7) .|. (ord c)) 0
-
 filterChunks :: Int -> [ByteString] -> Set ByteString -> [ByteString]
 filterChunks nThreads bs keep =
-  let keepBitSet = foldl (\acc b -> setBit acc (hash b)) (0 :: Integer) (Set.toList keep) :: Integer
-  in
-      withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keepBitSet) $ bs
+      withStrategy (parBuffer (nThreads * 2) rdeepseq) . map (filterChunk keep) $ bs
 
 keepSigs :: Config -> Set Pin
 keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
