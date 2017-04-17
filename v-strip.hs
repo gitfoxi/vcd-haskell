@@ -16,6 +16,8 @@
 --   #200
 --
 --  YAML config
+--
+-- Try memoizing each chunk; a smaller set of already-seen signals can be discarded faster maybe
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
@@ -43,16 +45,25 @@ import Config
 import Chunk
 import Vcd
 
+import Data.IORef
+import System.IO.Unsafe
+
 type Set = Set.HashSet
 
 
 -- TODO: ++ is slow (but is only called once per scope)
--- Make Header Foldable and use Data.Foldable.toList
+-- Make Header Foldable and use Data.Foldable.toList or use a builder
+-- headersToList headers
+-- flattens a list of headers with nested scopes into a single list
+-- So clearly, we don't support scoped signals
 headersToList :: [Header] -> [Header]
 headersToList (h@(Scope _ hs):hss) = h:headersToList hs ++ headersToList hss
 headersToList             (h:hs)   = h:headersToList hs
 headersToList              []      = []
 
+-- aliasesFromSigs sigNameSet headers
+-- Takes a list of signals and uses the headers to return a the set of aliases for those signals
+-- Only supports Wire signals, not busses or anything else.
 aliasesFromSigs :: Set ByteString -> [Header] -> Set ByteString
 aliasesFromSigs sigs =
     Set.fromList .
@@ -61,36 +72,55 @@ aliasesFromSigs sigs =
     filter isWire .
     headersToList
 
+-- name header
+-- returns the name of the wire
+-- fails if called on any Header other than a Wire
+-- TODO: there must be a better way
 name :: Header -> ByteString
 name  (Wire _ _ nm)  = nm
 name  _              = undefined
 
+-- alias header
+-- returns the alias of the wire
+-- fails if called on any Header other than a Wire
+-- TODO: there must be a better way
 alias :: Header -> ByteString
 alias  (Wire _ al _) = al
 alias  _             = undefined
 
+-- isWire header
+-- True iff header is a Wire
 isWire :: Header -> Bool
 isWire Wire{} = True
 isWire _             = False
 
+-- isKeep goodSigs line
+-- True iff line is something we want to keep
+-- - Timestamp
+-- - State change for a signal in goodSigs
 {-# INLINE isKeep #-}
 isKeep :: Set.HashSet ByteString -> ByteString -> Bool
 isKeep !goodsigs !l =
   let (a, sig) = B.splitAt 1 l
-      blank = B.null l
   in
-      blank
-   || a == "#"
-   || a == "$"
+   a == "#"
    || Set.member sig goodsigs
 
-
+-- warn message
+--
+-- Print a warning message on stderr
 warn :: String -> IO ()
 warn s = hPutStrLn stderr $ "Warning: " ++ s
 
+-- isTimestamp line
+--
+-- True iff line represents a timestamp
 isTimestamp :: ByteString -> Bool
 isTimestamp a = "#" `B.isPrefixOf` a
 
+-- eatExtraTimestamps lines
+--
+-- Filters out any extra timestamps remaining in lines, defined as two or more timestamps with nothing in between. Keep the last in a list of timestamps
 eatExtraTimestamps :: [ByteString] -> [ByteString]
 eatExtraTimestamps (a:b:cs) =
   if isTimestamp a && isTimestamp b
@@ -98,19 +128,41 @@ eatExtraTimestamps (a:b:cs) =
     else a : eatExtraTimestamps (b:cs)
 eatExtraTimestamps a = a
 
+-- chunkSize
+-- Tune this parameter for performance
+-- Bigger is faster but takes more memory
 chunkSize :: Int
-chunkSize = 512000
--- chunkLines = 4000
+chunkSize = 262144
 
+
+
+memoize falseTable f b = unsafePerformIO (
+ let updateFalseTable falseTable b = modifyIORef falseTable (Set.insert b)
+ in
+  do
+  ft <- (readIORef falseTable)
+  if (Set.member b ft)
+      then
+        return False
+      else
+        do
+         let r = f b
+         when (not r) (updateFalseTable falseTable b)
+         return r)
+
+-- filterChunk keepSigs Chunk
+--
+-- filters the signal lines in one chunk to discard massive amounts of crap
 -- {-# INLINE filterChunk #-}
 filterChunk
  :: Set ByteString -- ^ signal ids to keep
  -> ByteString -- ^ A chunk
  -> ByteString
 filterChunk keep bs =
-      B.unlines . eatExtraTimestamps . (filter (isKeep keep $!) $!) . mylines $! bs
+      B.unlines . eatExtraTimestamps . (filter (memoize falseTable (isKeep keep $!)) $!) . mylines $! bs
     where
       mylines = B.lines
+      falseTable = unsafePerformIO (newIORef Set.empty)
 
 filterChunks :: Int -> [ByteString] -> Set ByteString -> [ByteString]
 filterChunks nThreads bs keep =

@@ -77,27 +77,12 @@ library
   -- Base language which the package is written in.
   default-language:    Haskell2010
 
-
-Executable VcdStrip-single-threaded
-  ghc-options: -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -rtsopts
-  -- -O2
-  -- -fllvm
-  Main-Is:        VcdStrip-single-threaded.hs
-  Hs-Source-Dirs: .
-  build-depends:       base,
-                       attoparsec,
-                       bytestring,
-                       vcd,
-                       containers
-
-  default-language:    Haskell2010
-
-Executable VcdStrip-multi-core
+Executable v-strip
   ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates "-with-rtsopts=-N -qb0 -qg0 -G2 -A10M -H8000M -qa" -rtsopts
   --  -O2
   -- -eventlog
   -- -fllvm
-  Main-Is:        VcdStrip-multi-core.hs
+  Main-Is:        v-strip.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
                         attoparsec,
@@ -109,7 +94,8 @@ Executable VcdStrip-multi-core
                         vector,
                         yaml,
                         text,
-                        aeson
+                        aeson,
+                        memoize
 
   -- , vector-bytestring
 
