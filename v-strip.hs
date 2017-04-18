@@ -239,10 +239,13 @@ main = do
         keep = aliasesToKeep hdrs
         chunks = chunk chunkSize theRest
     traceEventIO "header done"
+    performGC
 
     let outputs = filterChunks cpus chunks keep
 
     hPutBuilder stdout (foldMap render hdrsOut)
+    -- XXX Ugly hack, should add a top-level header to contain the others
+    B.hPutStrLn stdout "$enddefinitions $end"
     B.putStr outputs
 
     -- mapM_ B.putStrLn $ eatExtraTimestamps . filter (isKeep keep) . B.lines $ theRest

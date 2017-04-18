@@ -45,7 +45,7 @@ data Header
 -- instance Traversable Header where
 
 render :: Header -> Builder
-render (Comment bs) = mconcat . map byteString $ ["$comment ", bs, " $end\n"]
+render (Comment bs) = mconcat . map byteString $ ["$comment ", bs, "$end\n"]
 render (TimeScale i) = mconcat [byteString "$timescale ", intDec i, byteString " fs $end\n"]
 render (Wire i a b) = mconcat [byteString "$var wire ", intDec i, byteString " ", byteString a, byteString " ", byteString b, byteString " $end\n"]
 render Ignored = byteString ""
