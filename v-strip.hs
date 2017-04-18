@@ -160,11 +160,11 @@ filterChunk keep bs =
     where
       mylines = B.lines
 
-filterChunks :: Int -> [ByteString] -> Set ByteString -> ByteString
+filterChunks :: Int -> [ByteString] -> Set ByteString -> [ ByteString ]
 filterChunks nThreads bs keep =
       -- map (filterChunk keep) $ bs  -- single-threaded debug
       -- map B.unlines . map eatExtraTimestamps
-      (B.unlines . eatExtraTimestamps . concat ) ( withStrategy (parBuffer ( nThreads ) rdeepseq) . map (filterChunk keep) $ bs)
+  (eatExtraTimestamps . concat ) ( withStrategy (parBuffer ( nThreads * 20 ) rdeepseq) . map (filterChunk keep) $ bs)
 
 keepSigs :: Config -> Set Pin
 keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
@@ -196,13 +196,13 @@ main = do
     traceEventIO "mmap done"
     performGC
     traceEventIO "GC done"
-    config <- readConfigFile configFile
+    config <- B.readFile configFile
     traceEventIO "config reading done"
 
     -- print config -- test
 
     -- TODO: process ports; don't keep clocks
-    let sigsToKeep = keepSigs config
+    let sigsToKeep = Set.fromList . B.words $ config
     traceEventIO "config parsing done"
 
     cpus <- getNumCapabilities
@@ -239,14 +239,16 @@ main = do
         keep = aliasesToKeep hdrs
         chunks = chunk chunkSize theRest
     traceEventIO "header done"
+    warn "about to GC"
     performGC
+    warn "GC done"
 
     let outputs = filterChunks cpus chunks keep
 
     hPutBuilder stdout (foldMap render hdrsOut)
     -- XXX Ugly hack, should add a top-level header to contain the others
     B.hPutStrLn stdout "$enddefinitions $end"
-    B.putStr outputs
+    mapM_ B.putStrLn outputs
 
     -- mapM_ B.putStrLn $ eatExtraTimestamps . filter (isKeep keep) . B.lines $ theRest
     -- print $ parseOnly parseSignal theRest
