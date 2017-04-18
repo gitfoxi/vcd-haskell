@@ -49,6 +49,8 @@ import Vcd
 import Data.List (groupBy)
 import Debug.Trace
 import System.IO.MMap
+import System.Exit
+import System.Mem
 
 type Set = Set.HashSet
 
@@ -141,7 +143,7 @@ eatExtraTimestamps ls = map last (groupBy bothAreTimestamps ls)
 -- Tune this parameter for performance
 -- Bigger is faster but takes more memory
 chunkSize :: Int
-chunkSize = 262144
+chunkSize = 262144 `div` 2
 
 
 
@@ -154,7 +156,7 @@ filterChunk
  -> ByteString -- ^ A chunk
  -> [ ByteString ]
 filterChunk keep bs =
-      (filter (isKeep keep $!) $!) . mylines $! bs
+    (eatExtraTimestamps . filter (isKeep keep $!) $!) . mylines $! bs
     where
       mylines = B.lines
 
@@ -162,7 +164,7 @@ filterChunks :: Int -> [ByteString] -> Set ByteString -> ByteString
 filterChunks nThreads bs keep =
       -- map (filterChunk keep) $ bs  -- single-threaded debug
       -- map B.unlines . map eatExtraTimestamps
-      (B.unlines . eatExtraTimestamps . concat ) ( withStrategy (parBuffer ( nThreads * 20 ) rdeepseq) . map (filterChunk keep) $ bs)
+      (B.unlines . eatExtraTimestamps . concat ) ( withStrategy (parBuffer ( nThreads ) rdeepseq) . map (filterChunk keep) $ bs)
 
 keepSigs :: Config -> Set Pin
 keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
@@ -187,24 +189,31 @@ keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
 -- cabal/stack: compile RTS threaded
 main :: IO ()
 main = do
+    traceEventIO "hello world"
     [configFile, vcdFile] <- getArgs
+    -- f <- B.readFile vcdFile
+    f <- mmapFileByteString vcdFile Nothing
+    traceEventIO "mmap done"
+    performGC
+    traceEventIO "GC done"
     config <- readConfigFile configFile
+    traceEventIO "config reading done"
 
     -- print config -- test
 
     -- TODO: process ports; don't keep clocks
     let sigsToKeep = keepSigs config
+    traceEventIO "config parsing done"
 
     cpus <- getNumCapabilities
     when (cpus < 48) $
-      warn $ "Only " ++ show cpus ++ " cpus detected. We recommend at least 48."
+      traceEventIO $ "Only " ++ show cpus ++ " cpus detected. We recommend at least 48."
 
     -- TODO: probably a big pause while we read the whole file
     -- If its a real file, mmap it
     -- If its a stream, read chunks
     -- Read a stream
     -- f <- B.getContents
-    f <- mmapFileByteString vcdFile Nothing
     let res = parse parseAllHeaders f
         (hdrs, theRest) =
           case res of
@@ -229,6 +238,7 @@ main = do
         aliasesToKeep = aliasesFromSigs sigsToKeep
         keep = aliasesToKeep hdrs
         chunks = chunk chunkSize theRest
+    traceEventIO "header done"
 
     let outputs = filterChunks cpus chunks keep
 
