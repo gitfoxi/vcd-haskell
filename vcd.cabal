@@ -105,3 +105,28 @@ Executable v-strip
         Config
         Data.Yaml.Char8
         Vcd
+
+Executable avc-transpose
+  ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates "-with-rtsopts=-N -qb0 -qg0 -G2 -A10M -H8000M -qa" -rtsopts -eventlog -O2
+  Main-Is:        avc-transpose.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        containers,
+                        parallel,
+                        unordered-containers,
+                        vector,
+                        yaml,
+                        text,
+                        aeson,
+                        mmap
+
+  -- , vector-bytestring
+
+  default-language:    Haskell2010
+
+  other-modules:       
+        Chunk
+        Config
+        Data.Yaml.Char8
+        Vcd
