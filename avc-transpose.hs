@@ -52,6 +52,10 @@ lineSplit len inp = B.unlines (splitEvery inp)
         in
           a : splitEvery b
 
+transpose :: Int -> Int -> ByteString -> ByteString
+transpose nRows nCols inp =
+  B.pack [B.index inp (row * nCols + col) | col <- [0..nCols - 1], row <- [0..nRows - 1]]
+
 main = do
     [avcFile] <- getArgs
     f <- mmapFileByteString avcFile Nothing
@@ -66,16 +70,22 @@ main = do
           drop 2 .
           B.words) $
           dataLines
+        nCols = B.length . head $ states
+        nRows = length states
+        allStates = B.concat states
         pins = getFormat f
         outp' = zip pins (B.transpose states)
 
 
+    B.putStr (transpose nRows nCols $! allStates )
+
     -- mapM_ B.putStrLn outp
-    forM_
-      outp'
-      (\( pin, state ) ->
-        do
-          B.putStrLn pin
-          B.putStrLn (lineSplit 80 state )
-          B.putStrLn ""
-        )
+
+    -- forM_
+    --   outp'
+    --   (\( pin, state ) ->
+    --     do
+    --       B.putStrLn pin
+    --       B.putStrLn (lineSplit 80 state )
+    --       B.putStrLn ""
+    --     )
