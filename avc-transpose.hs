@@ -77,6 +77,8 @@ main = do
         outp' = zip pins (B.transpose states)
 
 
+    putStrLn $ "Rows: " ++ show nRows
+    putStrLn $ "Cols: " ++ show nCols
     B.putStr (transpose nRows nCols $! allStates )
 
     -- mapM_ B.putStrLn outp
