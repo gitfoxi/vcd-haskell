@@ -8,9 +8,11 @@
 import           Control.Monad (forM_)
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
+import           Data.Char (isSpace)
 import           System.Environment (getArgs)
 import System.IO.MMap
 import System.Mem
+
 
 getFormat :: ByteString -> [ByteString]
 getFormat =
@@ -21,8 +23,10 @@ getFormat =
   B.unlines .
   dropComments .
   B.lines
-  where
-    dropComments = filter (not . B.isPrefixOf "#" )
+
+
+dropComments :: [ByteString] -> [ByteString]
+dropComments = filter (not . B.isPrefixOf "#" ) . map ( B.dropWhile isSpace ) 
 
 getDataLines :: ByteString -> [ByteString]
 getDataLines =
@@ -30,10 +34,9 @@ getDataLines =
   drop 1 .
   dropWhile (B.notElem ';') .
   dropWhile (not . B.isPrefixOf "FORMAT") .
-  dropLineComments .
+  dropComments .
   B.lines
   where
-    dropLineComments = filter (not . B.isPrefixOf "#" )
     splitSemi [] = []
     splitSemi s =
       let
