@@ -42,7 +42,6 @@ import           Data.Maybe (isJust)
 import           System.Environment (getArgs)
 import           System.IO (stderr, hPutStrLn, stdout)
 
-import Config
 import Chunk
 import Vcd
 
@@ -165,26 +164,6 @@ filterChunks nThreads bs keep =
       -- map (filterChunk keep) $ bs  -- single-threaded debug
       -- map B.unlines . map eatExtraTimestamps
   (eatExtraTimestamps . concat ) ( withStrategy (parBuffer ( nThreads * 20 ) rdeepseq) . map (filterChunk keep) $ bs)
-
-keepSigs :: Config -> Set Pin
-keepSigs conf = Set.fromList (data'port'pins ++ jtag'pins)
-  where
-    data'port'pins = filter (not . forced) . concatMap pins . data'ports $ conf
-    jtag'pins =
-      let  jt = jtag'port conf
-      in mux jt ++ map (\f -> f jt) [tdi, tck, tdo, tms]
-    forced :: Pin -> Bool
-    -- TODO: Error if pin not found in all'pins
-    --       Lens
-    forced k =
-      let mmpc = Map.lookup k (all'pins conf)
-      in case mmpc of
-        Nothing -> error $ "Missing " ++ B.unpack k ++ " in config"
-        Just mpc ->
-          case mpc of
-            Nothing -> False
-            Just pc -> isJust . force $ pc
-
 
 -- cabal/stack: compile RTS threaded
 main :: IO ()
