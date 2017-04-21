@@ -7,12 +7,22 @@
 
 import           Control.Monad (forM_)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Unsafe as B
 import           Data.ByteString.Char8 (ByteString)
-import           Data.Char (isSpace)
+import           Data.Char (isSpace, chr)
 import           System.Environment (getArgs)
 import System.IO.MMap
 import System.Mem
 
+import qualified Data.Array.Repa as R
+import qualified Data.Array.Repa.Repr.ByteString as R
+
+import Data.Word (Word8)
+
+import Data.Vector.Storable.ByteString
+
+import qualified Data.Vector as V
 
 getFormat :: ByteString -> [ByteString]
 getFormat =
@@ -57,7 +67,7 @@ lineSplit len inp = B.unlines (splitEvery inp)
 
 transpose :: Int -> Int -> ByteString -> ByteString
 transpose nRows nCols inp =
-  B.pack [B.index inp (row * nCols + col) | col <- [0..nCols - 1], row <- [0..nRows - 1]]
+  BS.pack [( B.unsafeIndex inp (row * nCols + col) ) | col <- [0..nCols - 1], row <- [0..nRows - 1]]
 
 main = do
     [avcFile] <- getArgs
@@ -75,14 +85,24 @@ main = do
           dataLines
         nCols = B.length . head $ states
         nRows = length states
-        allStates = B.concat states
+        allStates = B.concat states -- states as one long bytestring
         pins = getFormat f
         outp' = zip pins (B.transpose states)
+
+        r = R.fromByteString (R.Z R.:. (nRows::Int) R.:. (nCols::Int)) allStates
+        tr = R.transpose r
+
+    u <-  R.computeP tr :: IO (R.Array R.U R.DIM2 Word8)
+    let v = R.toUnboxed u
+        bs = vectorToByteString . V.convert $ v
 
 
     putStrLn $ "Rows: " ++ show nRows
     putStrLn $ "Cols: " ++ show nCols
-    B.putStr (transpose nRows nCols $! allStates )
+    performGC
+    B.putStr bs
+
+    -- B.putStr (transpose nRows nCols $! allStates )
 
     -- mapM_ B.putStrLn outp
 
@@ -94,3 +114,4 @@ main = do
     --       B.putStrLn (lineSplit 80 state )
     --       B.putStrLn ""
     --     )
+
