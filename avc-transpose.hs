@@ -6,14 +6,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import           Control.Monad (forM_)
-import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Unsafe as B
+import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Unsafe as B
 import           Data.Char (isSpace, chr)
 import           System.Environment (getArgs)
 import System.IO.MMap
 import System.Mem
+import System.IO (hPutStrLn, stderr)
 
 import qualified Data.Array.Repa as R
 import qualified Data.Array.Repa.Repr.ByteString as R
@@ -69,6 +70,13 @@ transpose :: Int -> Int -> ByteString -> ByteString
 transpose nRows nCols inp =
   BS.pack [( B.unsafeIndex inp (row * nCols + col) ) | col <- [0..nCols - 1], row <- [0..nRows - 1]]
 
+splitAtEach :: Int -> ByteString -> [ ByteString ]
+splitAtEach i inp
+  | B.null inp = []
+  | otherwise =
+  let (first, rest) = B.splitAt i inp
+  in first : splitAtEach i rest
+
 main = do
     [avcFile] <- getArgs
     f <- mmapFileByteString avcFile Nothing
@@ -95,12 +103,16 @@ main = do
     u <-  R.computeP tr :: IO (R.Array R.U R.DIM2 Word8)
     let v = R.toUnboxed u
         bs = vectorToByteString . V.convert $ v
+        horizStates = (splitAtEach nRows bs )
+        outLines = zipWith glue pins horizStates
+          where
+            glue a b = B.concat [a, " ", b]
 
 
-    putStrLn $ "Rows: " ++ show nRows
-    putStrLn $ "Cols: " ++ show nCols
+    hPutStrLn stderr $ "Rows: " ++ show nRows
+    hPutStrLn stderr $ "Cols: " ++ show nCols
     performGC
-    B.putStr bs
+    mapM_ B.putStrLn outLines
 
     -- B.putStr (transpose nRows nCols $! allStates )
 
