@@ -6,6 +6,7 @@ module Vcd
     , Signal (..)
 
     , filterHeaders
+    , mapHeaders
     , parseAllHeaders
     , parseSignal
     , render
@@ -32,6 +33,7 @@ import Prelude hiding (takeWhile)
 type FemptoSeconds = Int
 
 -- TODO: Define structure separately from contents. This is basically a rosetree that can contain certain things
+-- TODO: a Top type and an Unknown type to preserve unrecognized statements
 data Header
     = Comment !BS.ByteString
     | TimeScale !FemptoSeconds
@@ -60,6 +62,14 @@ filterHeaders f ((s@(Scope nm sh)):hss)
 filterHeaders f (a:as)
   | f a = a : filterHeaders f as
   | otherwise = filterHeaders f as
+
+-- TODO: Why am I specializing map for headers? Use a Foldable/Traversable structure
+mapHeaders :: (Header -> Header) -> [Header] -> [Header]
+mapHeaders _ [] = []
+mapHeaders f ((s@(Scope nm sh)):hss)
+  = Scope nm (mapHeaders f sh) : mapHeaders f hss
+mapHeaders f (a:as)
+  = f a : mapHeaders f as
 
 
 data Signal
