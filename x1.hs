@@ -4,6 +4,8 @@
     PINB 01101Z010
 
 To binary bytes as given by the wavetable
+
+TODO: Warn if lookupDefault ever actually takes the default
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -37,6 +39,7 @@ xForm inp =
   let [pin, states] = B.words inp
   in B.unwords
     [ pin
+    , B.pack $ show ( B.length states )
     , B.map (lookupDefault defaultWave waveTable) states]
 
 main :: IO ()
