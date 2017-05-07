@@ -43,6 +43,7 @@ import           System.Environment (getArgs)
 import           System.IO (stderr, hPutStrLn, stdout)
 
 import Chunk
+import Util
 import Vcd
 
 import Data.List (groupBy)
@@ -91,12 +92,6 @@ alias :: Header -> ByteString
 alias  (Wire _ al _) = al
 alias  _             = undefined
 
--- isWire header
--- True iff header is a Wire
-isWire :: Header -> Bool
-isWire Wire{} = True
-isWire _             = False
-
 -- isKeep goodSigs line
 -- True iff line is something we want to keep
 -- - Timestamp
@@ -115,13 +110,6 @@ isKeep !goodsigs !l =
 -- Print a warning message on stderr
 warn :: String -> IO ()
 warn s = hPutStrLn stderr $ "Warning: " ++ s
-
--- isTimestamp line
---
--- True iff line represents a timestamp
--- {-# INLINE isTimestamp #-}
-isTimestamp :: ByteString -> Bool
-isTimestamp a = "#" `B.isPrefixOf` a
 
 -- eatExtraTimestamps lines
 --

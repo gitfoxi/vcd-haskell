@@ -30,13 +30,12 @@ import           Data.Word (Word8)
 
 import Prelude hiding (takeWhile)
 
-type FemptoSeconds = Int
 
 -- TODO: Define structure separately from contents. This is basically a rosetree that can contain certain things
 -- TODO: a Top type and an Unknown type to preserve unrecognized statements
 data Header
     = Comment !BS.ByteString
-    | TimeScale !FemptoSeconds
+    | TimeScale !Int !BS.ByteString -- FemptoSeconds
     | Scope !BS.ByteString [Header]
     | Wire !Int !BS.ByteString !BS.ByteString -- ^ Width Alias Name
     | Ignored
@@ -48,7 +47,7 @@ data Header
 
 render :: Header -> Builder
 render (Comment bs) = mconcat . map byteString $ ["$comment ", bs, "$end\n"]
-render (TimeScale i) = mconcat [byteString "$timescale ", intDec i, byteString " fs $end\n"]
+render (TimeScale i s) = mconcat [byteString "$timescale ", intDec i, byteString s, byteString " $end\n"]
 render (Wire i a b) = mconcat [byteString "$var wire ", intDec i, byteString " ", byteString a, byteString " ", byteString b, byteString " $end\n"]
 render Ignored = byteString ""
 render (Scope a hs) = byteString "$scope module " <> byteString a <> " $end\n"  <> foldMap render hs <> byteString "$upscope $end\n"
@@ -98,9 +97,10 @@ parseTimeScale = do
     keyword "$timescale"
     n <- decimal
     skipSpace
-    keyword "fs" -- TODO: support other units
+    scale <- takeWhile (not . isSpace_w8) -- fs, ns, etc
+    skipSpace
     keyword "$end"
-    return $ TimeScale n
+    return $ TimeScale n scale
 
 parseScope :: Parser Header
 parseScope = do

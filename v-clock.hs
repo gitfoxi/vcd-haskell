@@ -75,10 +75,6 @@ clock tck_alias =
     groupByTime . -- [[BS]]
     B.lines -- [BS]
 
-flattenHeaders :: [Header] -> [Header]
-flattenHeaders ( (Scope _ hs):hss ) = flattenHeaders hs ++ flattenHeaders hss
-flattenHeaders (h:hss) = h:flattenHeaders hss
-
 main :: IO ()
 main = do
 

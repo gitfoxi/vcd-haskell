@@ -3,6 +3,8 @@
 Some function used by more than one script.
 -}
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module Util where
 
 import           Data.Attoparsec.ByteString.Char8
@@ -31,5 +33,22 @@ splitHeaders f =
             Done theRest' hdrs' -> (hdrs', theRest')
         in (hdrs, theRest)
 
+-- isTimestamp line
+--
+-- True iff line represents a timestamp
+-- {-# INLINE isTimestamp #-}
 isTimestamp :: ByteString -> Bool
-isTimestamp s = fromMaybe False ( fmap (( == '#' ) . fst) ( B.uncons s ) )
+isTimestamp a = "#" `B.isPrefixOf` a
+
+
+
+flattenHeaders :: [Header] -> [Header]
+flattenHeaders ( (Scope _ hs):hss ) = flattenHeaders hs ++ flattenHeaders hss
+flattenHeaders (h:hss) = h:flattenHeaders hss
+flattenHeaders [] = []
+
+-- isWire header
+-- True iff header is a Wire
+isWire :: Header -> Bool
+isWire Wire{} = True
+isWire _             = False
