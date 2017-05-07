@@ -8,6 +8,7 @@ module Util where
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
+import           Data.Maybe (fromMaybe)
 
 import Vcd
 
@@ -29,3 +30,6 @@ splitHeaders f =
                      ++ "EOF during header"
             Done theRest' hdrs' -> (hdrs', theRest')
         in (hdrs, theRest)
+
+isTimestamp :: ByteString -> Bool
+isTimestamp s = fromMaybe False ( fmap (( == '#' ) . fst) ( B.uncons s ) )

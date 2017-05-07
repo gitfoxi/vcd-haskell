@@ -147,3 +147,20 @@ Executable v-rename
   other-modules:       
     Util
     Vcd
+
+Executable v-clock
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:        v-clock.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        attoparsec,
+                        split,
+                        hashable,
+                        unordered-containers
+
+  default-language:    Haskell2010
+
+  other-modules:       
+    Util
+    Vcd
