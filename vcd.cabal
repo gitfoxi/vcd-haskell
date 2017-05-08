@@ -207,6 +207,7 @@ Executable hub-binl
                         attoparsec,
                         split,
                         hashable,
+                        process-extras,
                         unordered-containers
 
   default-language:    Haskell2010

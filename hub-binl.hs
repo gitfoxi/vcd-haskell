@@ -5,6 +5,7 @@ hub = Horizontal Uncompressed Binary
 States have been converted to binary wavetable entries
 
 TODO Handle padding -- divisible by 6 for VM, 8 for SM
+     aldc subprocess does compression
 
 -}
 
@@ -19,6 +20,7 @@ import           Data.Function ((&))
 import           Data.List.Split (chunksOf)
 import           Data.Maybe (fromJust)
 import           System.Environment (getArgs)
+import           System.Process.ByteString
 
 import Debug.Trace
 
@@ -58,6 +60,13 @@ main = do
     [port, label, wavetable] <- fmap (map B.pack ) getArgs
 
     f <- B.getContents
+    (exitCode, fc, ferr) <-
+      readProcessWithExitCode
+        "./v2b-experiment"
+        []
+        f
+    B.putStrLn fc
+
     let
       length = getLength f
       paddedLength = pad * ( ceiling ( fromIntegral length / fromIntegral pad ) ) :: Int
