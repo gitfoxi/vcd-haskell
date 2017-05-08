@@ -106,7 +106,7 @@ int main(int argc, char** argv)
         int compressed_len;
         char *compressed_dat;
         encode(dat, len, &compressed_dat, &compressed_len);
-        printf("pin: %s len: %d ", pin, compressed_len);
+        printf("%s %d ", pin, compressed_len);
         fwrite(compressed_dat, compressed_len, 1, stdout);
         fputc('\n', stdout);
         free(dat);

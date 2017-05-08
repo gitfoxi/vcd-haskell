@@ -13,6 +13,7 @@ TODO Handle padding -- divisible by 6 for VM, 8 for SM
 
 module Main where
 
+import           Control.Monad
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Char (isSpace)
@@ -20,7 +21,10 @@ import           Data.Function ((&))
 import           Data.List.Split (chunksOf)
 import           Data.Maybe (fromJust)
 import           System.Environment (getArgs)
+import           System.Exit
 import           System.Process.ByteString
+
+import Util
 
 import Debug.Trace
 
@@ -33,7 +37,7 @@ getLength s =
       ws = B.words (head ls)
   in (fst . fromJust . B.readInt ) (head . drop 1 $ ws)
 
-hubLines :: ByteString -> [(ByteString, Int, ByteString)] -- pin, length, data
+hubLines :: ByteString -> [(ByteString, ByteString)] -- pin, data
 hubLines s =
   let
     (pin, afterPin) = B.break isSpace s
@@ -42,34 +46,53 @@ hubLines s =
   in
     case B.null pin of
       True -> []
-      False -> (pin, num, bin) : hubLines (B.drop 1 afterBin )
+      False -> (pin, bin) : hubLines (B.drop 1 afterBin )
 
-vecd :: Int -> (ByteString, Int, ByteString) -> ByteString
-vecd paddedLength (pin, datLength, dat) =
-  B.concat ["VECD PARA,SM,0,",
-            B.pack . show $ paddedLength,
-            ",(", pin, "),#",
-            B.pack . show . length . show $ paddedLength,
-            B.pack . show $ paddedLength, dat, B.replicate (paddedLength - datLength) (B.last dat) ]
-  -- TODO 000 in front of dat len
+vecc :: Int -> (ByteString, ByteString) -> ByteString
+vecc paddedLength (pin, dat) =
+  let
+    datLength = B.length dat
+  in
+    B.concat ["VECC PARA,SM,0,",
+              B.pack . show $ paddedLength,
+              ",(", pin, "),#",
+              B.pack . show . length . show $ datLength,
+              B.pack . show $ datLength, dat]
 
+vecd :: Int -> (ByteString, ByteString) -> ByteString
+vecd paddedLength (pin, dat) =
+  let
+    datLength = B.length dat
+  in
+    B.concat ["VECD PARA,SM,0,",
+              B.pack . show $ paddedLength,
+              ",(", pin, "),#",
+              B.pack . show . length . show $ datLength,
+              B.pack . show $ paddedLength, dat ]
 
+padded :: Int -> ByteString -> ByteString
+padded paddedLength inp =
+  hubLines inp &
+  map (\(pin, dat) ->
+         B.concat
+         [pin
+          , " "
+          , B.pack . show $ paddedLength
+          , " "
+          , dat
+          , B.replicate (paddedLength - (B.length dat)) (B.last dat)
+          ])
+  & B.unlines
 
 main :: IO ()
 main = do
     [port, label, wavetable] <- fmap (map B.pack ) getArgs
 
     f <- B.getContents
-    (exitCode, fc, ferr) <-
-      readProcessWithExitCode
-        "./v2b-experiment"
-        []
-        f
-    B.putStrLn fc
-
     let
       length = getLength f
       paddedLength = pad * ( ceiling ( fromIntegral length / fromIntegral pad ) ) :: Int
+      paddedDat = padded paddedLength f
 
     B.putStrLn $ "hp93000,vector,0.1"
     B.putStrLn $ B.concat [ "DMAS MTST,SM,0,(", port, ")" ]
@@ -84,4 +107,18 @@ main = do
     B.putStrLn $ B.concat [ "SQPG 2,GENV,", B.pack . show $ length, ",,SM,(", port, ")" ]
     B.putStrLn $ B.concat [ "SQPG 3,STOP,,,,(", port, ")" ]
 
-    mapM_ ( B.putStrLn . vecd paddedLength ) (hubLines f)
+    -- Compressor subprocess
+    (exitCode, fc, ferr) <-
+      readProcessWithExitCode
+        "./v2b-experiment/aldc"
+        []
+        paddedDat
+
+
+    when (exitCode == ExitSuccess) $
+      mapM_ ( B.putStrLn . vecc paddedLength ) (hubLines fc)
+
+    unless (exitCode == ExitSuccess) $ do
+      warn $ show ferr
+      warn "hub-binl unable to start aldc subprocess; output will be uncompressed VECD instead of compressed VECC"
+      mapM_ ( B.putStrLn . vecd paddedLength ) (hubLines paddedDat)

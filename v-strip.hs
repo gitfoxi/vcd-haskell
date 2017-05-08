@@ -104,13 +104,6 @@ isKeep !goodsigs !l =
    a == "#"
    || Set.member sig goodsigs 
 
-
--- warn message
---
--- Print a warning message on stderr
-warn :: String -> IO ()
-warn s = hPutStrLn stderr $ "Warning: " ++ s
-
 -- eatExtraTimestamps lines
 --
 -- Filters out any extra timestamps remaining in lines, defined as two or more timestamps with nothing in between. Keep the last in a list of timestamps

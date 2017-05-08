@@ -11,6 +11,7 @@ import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Maybe (fromMaybe)
+import           System.IO
 
 import Vcd
 
@@ -52,3 +53,9 @@ flattenHeaders [] = []
 isWire :: Header -> Bool
 isWire Wire{} = True
 isWire _             = False
+
+-- warn message
+--
+-- Print a warning message on stderr
+warn :: String -> IO ()
+warn s = hPutStrLn stderr $ "Warning: " ++ s
