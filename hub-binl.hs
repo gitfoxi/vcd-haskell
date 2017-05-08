@@ -13,6 +13,7 @@ TODO Handle padding -- divisible by 6 for VM, 8 for SM
 
 module Main where
 
+import           Control.Exception
 import           Control.Monad
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
@@ -84,6 +85,14 @@ padded paddedLength inp =
           ])
   & B.unlines
 
+{- 
+tryAny :: IO a -> IO (Either SomeException a)
+tryAny action = withAsync action waitCatch
+
+catchAny :: IO a -> (SomeException -> IO a) -> IO a
+catchAny action onE = tryAny action >>= either onE return
+-}
+
 main :: IO ()
 main = do
     [port, label, wavetable] <- fmap (map B.pack ) getArgs
@@ -108,11 +117,19 @@ main = do
     B.putStrLn $ B.concat [ "SQPG 3,STOP,,,,(", port, ")" ]
 
     -- Compressor subprocess
+    e <- try $
+        readProcessWithExitCode
+          "./v2b-experiment/aldc"
+          []
+          paddedDat
+
     (exitCode, fc, ferr) <-
-      readProcessWithExitCode
-        "./v2b-experiment/aldc"
-        []
-        paddedDat
+      case e of
+              Left e  ->
+                do
+                  warn $ show (e :: IOException)
+                  return (ExitFailure 1, "", B.pack . show $ e)
+              Right x -> return x
 
 
     when (exitCode == ExitSuccess) $
