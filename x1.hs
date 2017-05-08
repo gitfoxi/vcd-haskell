@@ -25,7 +25,12 @@ waveTable
     ,('Z',2)
     ,('X',2)
     ,('L',3)
-    ,('H',4)]
+    ,('H',4)
+    ,('z',2)
+    ,('x',2)
+    ,('l',3)
+    ,('h',4)
+    ]
 
 defaultWave :: Char
 defaultWave = chr 255
