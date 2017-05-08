@@ -38,11 +38,11 @@ main = do
 
       expand :: [ByteString] -> ByteString
       expand [ pin,lens,states ] =
-        B.unlines [ pin
+        B.unwords [ pin
                   , B.concat (zipWith
                               (\len state -> B.replicate (fst . fromJust $ B.readInt len ) state) (B.words lens ) (B.unpack states ))]
       expand x = error $
         "expand called without 3 lines"
         ++ show x
 
-    mapM_ B.putStr hus
+    mapM_ B.putStrLn hus

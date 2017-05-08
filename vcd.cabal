@@ -197,3 +197,18 @@ Executable hcd-expand-hus
   default-language:    Haskell2010
 
   other-modules:       
+
+Executable hub-binl
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:        hub-binl.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        attoparsec,
+                        split,
+                        hashable,
+                        unordered-containers
+
+  default-language:    Haskell2010
+
+  other-modules:       
