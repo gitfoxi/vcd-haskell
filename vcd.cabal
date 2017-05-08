@@ -182,3 +182,18 @@ Executable vcd-transpose-hcd
   other-modules:       
     Util
     Vcd
+
+Executable hcd-expand-hus
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:        hcd-expand-hus.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        attoparsec,
+                        split,
+                        hashable,
+                        unordered-containers
+
+  default-language:    Haskell2010
+
+  other-modules:       

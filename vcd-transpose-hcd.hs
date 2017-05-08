@@ -1,5 +1,7 @@
 {- vcd-transpose-hcd < pattern.vcd
 
+hcd = Horizontal Compressed Difference
+
 -- Clocks in signals on rising jtg_tck
 
 -- TODO clock outputs on falling tck
