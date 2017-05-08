@@ -49,8 +49,7 @@ xForm inp =
 
 main :: IO ()
 main = do
-  [fileName] <- getArgs
-  contents <- B.readFile fileName
+  contents <- B.getContents
 
   mapM_
     (B.putStrLn
