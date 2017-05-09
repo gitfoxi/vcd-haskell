@@ -3,7 +3,7 @@
 set -x
 set -e
 
-PORT=pNoClk
+PORT=NO_REF_CLK
 
 INP=$1
 BASE=`basename $1 .vcd`

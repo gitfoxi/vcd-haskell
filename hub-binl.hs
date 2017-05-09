@@ -105,7 +105,7 @@ main = do
 
     B.putStrLn $ "hp93000,vector,0.1"
     B.putStrLn $ B.concat [ "DMAS MTST,SM,0,(", port, ")" ]
-    B.putStrLn $ B.concat [ "DMAS PARA,SM,", B.pack . show $ paddedLength, "(", port, ")" ]
+    B.putStrLn $ B.concat [ "DMAS PARA,SM,", B.pack . show $ paddedLength, ",(", port, ")" ]
     B.putStrLn $ B.concat [ "DMAS SQPG,SM,4,(", port, ")" ]
     B.putStrLn $ "STML 1"
     B.putStrLn $ B.concat [ "SQLB \"", label, "\",MAIN,0,3,\"", wavetable, "\",(", port, ")" ]
