@@ -229,3 +229,35 @@ Executable hcd-split-static
   default-language:    Haskell2010
 
   other-modules:       
+
+Executable hcd-force
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:         hcd-force.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        attoparsec,
+                        split,
+                        hashable,
+                        process-extras,
+                        unordered-containers
+
+  default-language:    Haskell2010
+
+  other-modules:       
+
+Executable hcd-io
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:         hcd-io.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        attoparsec,
+                        split,
+                        hashable,
+                        process-extras,
+                        unordered-containers
+
+  default-language:    Haskell2010
+
+  other-modules:       
