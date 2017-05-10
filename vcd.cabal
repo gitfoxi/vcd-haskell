@@ -333,3 +333,21 @@ Executable x2
   default-language:    Haskell2010
 
   other-modules:       
+
+Executable hus-custom-wavetable
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:         hus-custom-wavetable.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        attoparsec,
+                        split,
+                        hashable,
+                        process-extras,
+                        unordered-containers
+
+  other-modules: Hcd                 
+
+  default-language:    Haskell2010
+
+  other-modules:       

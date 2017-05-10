@@ -29,8 +29,8 @@ import Util
 
 import Debug.Trace
 
-pad :: Int
-pad = 8 -- hardcode for now, 6 for VM
+padTo :: Int
+padTo = 8 -- hardcode for now, 6 for VM
 
 getLength :: ByteString -> Int
 getLength s =
@@ -100,7 +100,7 @@ main = do
     f <- B.getContents
     let
       length = getLength f
-      paddedLength = pad * ( ceiling ( fromIntegral length / fromIntegral pad ) ) :: Int
+      paddedLength = padTo * ( ceiling ( fromIntegral length / fromIntegral padTo ) ) :: Int
       paddedDat = padded paddedLength f
 
     B.putStrLn $ "hp93000,vector,0.1"

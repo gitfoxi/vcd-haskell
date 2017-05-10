@@ -10,7 +10,8 @@ module Util where
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
-import           Data.Maybe (fromMaybe)
+import qualified Data.HashSet as Set
+import           Data.HashSet ( HashSet )
 import           System.IO
 
 import Vcd
@@ -59,3 +60,25 @@ isWire _             = False
 -- Print a warning message on stderr
 warn :: String -> IO ()
 warn s = hPutStrLn stderr $ "Warning: " ++ s
+
+states :: String
+states = "01xlh"
+
+statesSet :: HashSet Char
+statesSet = Set.fromList states
+
+canonical :: ByteString -> ByteString
+canonical = B.map f
+  where
+    f :: Char -> Char
+    f a | a `Set.member` statesSet = a
+        | otherwise = 'x'
+
+pad :: Int -> ByteString -> ByteString
+pad n bs =
+  let
+    n' = fromIntegral n
+    l' = fromIntegral $ B.length bs :: Double
+    padLen = n * ceiling (l' / n' ) - B.length bs
+  in
+    B.concat [bs, B.replicate padLen (B.last bs)]

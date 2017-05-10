@@ -1,11 +1,13 @@
-{- Map an expanded, transposed (horizontal, if you will) file like
+{- x2
+
+   Map an expanded, transposed (horizontal, if you will) file like
 
     PINA XXHHHHLLL
     PINB 01101Z010
 
 To binary bytes as given by the wavetable
 
-TODO: Warn if lookupDefault ever actually takes the default
+TODO This is a bit slower than I'd like
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -18,7 +20,6 @@ import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashSet as Set
 import           Data.HashSet ( HashSet )
 
--- TODO map z and other unknown characters to x
 states :: String
 states = "01xlh"
 
