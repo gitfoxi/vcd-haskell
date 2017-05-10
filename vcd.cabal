@@ -279,3 +279,21 @@ Executable hcd-split
   default-language:    Haskell2010
 
   other-modules:       
+
+Executable hcd-static
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:         hcd-static.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        attoparsec,
+                        split,
+                        hashable,
+                        process-extras,
+                        unordered-containers
+
+  other-modules: Hcd                 
+
+  default-language:    Haskell2010
+
+  other-modules:       
