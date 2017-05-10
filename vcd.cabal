@@ -344,10 +344,11 @@ Executable hus-custom-wavetable
                         split,
                         hashable,
                         process-extras,
+                        optparse-applicative,
                         unordered-containers
 
   other-modules: Hcd                 
 
   default-language:    Haskell2010
 
-  other-modules:       
+  other-modules:       WaveTable
