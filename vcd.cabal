@@ -352,3 +352,22 @@ Executable hus-custom-wavetable
   default-language:    Haskell2010
 
   other-modules:       WaveTable
+
+Executable hub-repeat-compress-hub
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:          hub-repeat-compress-hub.hs
+  Hs-Source-Dirs: . src
+  build-depends:        base,
+                        bytestring,
+                        attoparsec,
+                        split,
+                        hashable,
+                        process-extras,
+                        optparse-applicative,
+                        unordered-containers
+
+  other-modules: Hcd                 
+
+  default-language:    Haskell2010
+
+  other-modules:       WaveTable

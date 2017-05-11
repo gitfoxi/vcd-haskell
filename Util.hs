@@ -82,3 +82,13 @@ pad n bs =
     padLen = n * ceiling (l' / n' ) - B.length bs
   in
     B.concat [bs, B.replicate padLen (B.last bs)]
+
+getInput :: FilePath -> IO ByteString
+getInput f =
+  if f == ""
+  then B.getContents
+  else B.readFile f
+
+diff :: [Int] -> [Int]
+diff (a:b:rest) = b - a : diff (b:rest)
+diff _ = []

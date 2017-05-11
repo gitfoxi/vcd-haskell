@@ -65,10 +65,6 @@ format inp =
     formatWaves = zipWith spacer (map (B.pack . show) ([0..] :: [Int]) )
     spacer a b = B.unwords [a,b]
 
-data Input =
-  FileInput FilePath
-  | StdInput
-
 data Opts =
   Opts
   { xmode :: Int
@@ -97,12 +93,6 @@ opts = info (parseOpts <**> helper)
   ( fullDesc
   <> progDesc "Generate a custom wavetable with all combinations required for input.hus file"
   <> header "hus-custom-wavetable - custom wavetable generator")
-
-getInput :: FilePath -> IO ByteString
-getInput f =
-  if f == ""
-  then B.getContents
-  else B.readFile f
 
 breakWaves :: [WaveTable] -> [WaveTable]
 breakWaves = concat . map go
