@@ -14,7 +14,7 @@ TODO Handle padding -- divisible by 6 for VM, 8 for SM
 module Main where
 
 -- import           Control.Exception
--- import           Control.Monad
+import           Control.Monad
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Char (isSpace)
@@ -53,6 +53,7 @@ data Opts =
   Opts
   { threshold :: Int
   , input :: FilePath -- Input
+  , repeatsOutFile :: FilePath
   }
 
 parseOpts :: Parser Opts
@@ -67,6 +68,12 @@ parseOpts = Opts
       (  metavar "HUBFILE.hub"
       <> value ""
       <> help "A Horizontal-Uncompressed binary file")
+  <*> strOption
+      (  long "outputFile"
+      <> short 'o'
+      <> value ""
+      <> metavar "FILENAME.repeats"
+      <> help "Optionally dump repeats to a file for use by other tools like a comment inserter")
 
 opts :: ParserInfo Opts
 opts = info (parseOpts <**> helper)
@@ -112,9 +119,13 @@ unrepeat rs bs = B.concat $ go 0 rs bs
       in
         a : ( B.replicate (len - 1) (B.last a) ) : ( go (1 + addr) rs b )
 
+formatRepeatFile :: (Int,Int) -> ByteString
+formatRepeatFile (a, b) = B.unwords [B.pack (show a)
+                                    ,B.pack (show b)]
+
 main :: IO ()
 main = do
-    Opts threshold inputFile <- execParser opts
+    Opts threshold inputFile repeatFile <- execParser opts
     contents <- getInput inputFile
 
     let
@@ -136,4 +147,7 @@ main = do
 
     mapM_ (B.putStrLn . format) (zip (map fst hs) datOut)
     -- print $ "Matches: " ++ matches show
-    
+
+    unless (null repeatFile)
+      (B.writeFile repeatFile (B.unlines (map formatRepeatFile repeats)))
+
