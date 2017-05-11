@@ -13,24 +13,24 @@ TODO Handle padding -- divisible by 6 for VM, 8 for SM
 
 module Main where
 
-import           Control.Exception
-import           Control.Monad
+-- import           Control.Exception
+-- import           Control.Monad
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Char (isSpace)
-import           Data.Function ((&))
+-- import           Data.Function ((&))
 import           Data.List (nub, sort)
-import           Data.List.Split (chunksOf)
+-- import           Data.List.Split (chunksOf)
 import           Data.Maybe (fromJust)
-import           System.Environment (getArgs)
-import           System.Exit
-import           System.Process.ByteString
+-- import           System.Environment (getArgs)
+-- import           System.Exit
+-- import           System.Process.ByteString
 import Options.Applicative
 import Data.Semigroup ((<>))
 
 import Util
 
-import Debug.Trace
+-- import Debug.Trace
 
 getLength :: ByteString -> Int
 getLength s =
@@ -79,7 +79,7 @@ enumChanges bs = reverse . go (B.head bs, 1, [0]) $ B.tail bs
   where
     go :: (Char, Int, [Int]) -> ByteString -> [Int]
     go (prevChar, addr, changeList) bs
-      | B.null bs = (addr - 1) : changeList
+      | B.null bs = addr : changeList
       | B.head bs == prevChar = go (prevChar, addr + 1, changeList) (B.tail bs)
       | otherwise = go (B.head bs, addr + 1, addr : changeList) (B.tail bs)
 
@@ -103,6 +103,15 @@ applyRepeats rs bs = B.concat $ go 0 rs bs
 format :: (ByteString, ByteString) -> ByteString
 format (pin, dat) = B.unwords [pin, B.pack . show $ B.length dat, dat]
 
+unrepeat :: [(Int,Int)] -> ByteString -> ByteString
+unrepeat rs bs = B.concat $ go 0 rs bs
+  where
+    go _ [] bs = [ bs ]
+    go acc ((addr,len):rs) bs =
+      let (a,b) = B.splitAt (1 + addr - acc) bs
+      in
+        a : ( B.replicate (len - 1) (B.last a) ) : ( go (1 + addr) rs b )
+
 main :: IO ()
 main = do
     Opts threshold inputFile <- execParser opts
@@ -116,6 +125,8 @@ main = do
       candidates = filter ( (> threshold) . snd ) (zip changeCycles diffs)
       repeats = mkRepeats candidates
       datOut = map (applyRepeats repeats . snd) hs
+      unrepeatTest = map ( unrepeat repeats ) datOut
+      matches = map snd hs == unrepeatTest
 
     -- print changeCycles
     -- print diffs
@@ -124,3 +135,5 @@ main = do
     -- mapM_ ( B.putStrLn . vecd paddedLength ) (hubLines paddedDat)
 
     mapM_ (B.putStrLn . format) (zip (map fst hs) datOut)
+    -- print $ "Matches: " ++ matches show
+    
