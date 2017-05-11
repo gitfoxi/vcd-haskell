@@ -136,6 +136,5 @@ main = do
       mapM_ ( B.putStrLn . vecc paddedLength ) (hubLines fc)
 
     unless (exitCode == ExitSuccess) $ do
-      warn $ show ferr
       warn "hub-binl unable to start aldc subprocess; output will be uncompressed VECD instead of compressed VECC"
       mapM_ ( B.putStrLn . vecd paddedLength ) (hubLines paddedDat)

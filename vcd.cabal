@@ -78,7 +78,7 @@ library
   -- Base language which the package is written in.
   default-language:    Haskell2010
 
-Executable v-strip
+Executable vcd-strip
   ghc-options: -threaded -Wall -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates "-with-rtsopts=-N -qb0 -qg0 -G2 -A10M -H4000M -qa" -rtsopts -O2
   -- -eventlog 
   Main-Is:        v-strip.hs
@@ -90,6 +90,7 @@ Executable v-strip
                         parallel,
                         unordered-containers,
                         aeson,
+                        optparse-applicative,
                         mmap
 
   -- , vector-bytestring
@@ -101,7 +102,7 @@ Executable v-strip
         Vcd
         Util
 
-Executable avc-transpose
+Executable avc-transpose-hus
   ghc-options:  -rtsopts -O2 -threaded
   Main-Is:        avc-transpose.hs
   Hs-Source-Dirs: . src
@@ -111,6 +112,7 @@ Executable avc-transpose
                         repa,
                         spool,
                         vector,
+                        optparse-applicative,
                         mmap
 
   -- , vector-bytestring
@@ -121,24 +123,28 @@ Executable avc-transpose
     Util
     Vcd
 
-Executable x1
+Executable hus-x1-hub
   ghc-options:  -rtsopts -O2 -threaded
   Main-Is:        x1.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
+                        attoparsec,
+                        unordered-containers,
                         bytestring
 
   -- , vector-bytestring
 
   default-language:    Haskell2010
 
-  other-modules:       
+  other-modules:       Util
 
-Executable v-rename
+Executable vcd-rename
   ghc-options:  -rtsopts -O2 -threaded
   Main-Is:        v-rename.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         unordered-containers
@@ -149,11 +155,12 @@ Executable v-rename
     Util
     Vcd
 
-Executable v-clock
+Executable vcd-clock
   ghc-options:  -rtsopts -O2 -threaded
   Main-Is:        v-clock.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -171,6 +178,7 @@ Executable vcd-transpose-hcd
   Main-Is:        vcd-transpose-hcd.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -188,6 +196,7 @@ Executable hcd-expand-hus
   Main-Is:        hcd-expand-hus.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -203,6 +212,7 @@ Executable hub-binl
   Main-Is:        hub-binl.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -219,6 +229,7 @@ Executable hcd-split-static
   Main-Is:         hcd-split-static.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -235,6 +246,7 @@ Executable hcd-force
   Main-Is:         hcd-force.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -251,6 +263,7 @@ Executable hcd-io
   Main-Is:         hcd-io.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -267,6 +280,7 @@ Executable hcd-split
   Main-Is:         hcd-split.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -285,6 +299,7 @@ Executable hcd-static
   Main-Is:         hcd-static.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -303,6 +318,7 @@ Executable hcd-output
   Main-Is:         hcd-output.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
@@ -316,19 +332,22 @@ Executable hcd-output
 
   other-modules:       
 
-Executable x2
+Executable hus-x2-hub
   ghc-options:  -rtsopts -O2 -threaded
   Main-Is:         x2.hs
   Hs-Source-Dirs: . src
   build-depends:        base,
+                        optparse-applicative,
                         bytestring,
                         attoparsec,
                         split,
                         hashable,
                         process-extras,
+                        attoparsec,
                         unordered-containers
 
   other-modules: Hcd                 
+                 Util
 
   default-language:    Haskell2010
 

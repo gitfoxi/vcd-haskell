@@ -198,10 +198,7 @@ main = do
         aliasesToKeep = aliasesFromSigs sigsToKeep
         keep = aliasesToKeep hdrs
         chunks = chunk chunkSize theRest
-    traceEventIO "header done"
-    warn "about to GC"
     performGC
-    warn "GC done"
 
     let outputs = filterChunks cpus chunks keep
 

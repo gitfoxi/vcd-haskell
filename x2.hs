@@ -17,14 +17,10 @@ import           Data.ByteString.Char8 (ByteString)
 import           Data.Char (chr)
 import qualified Data.HashMap.Strict as Map
 import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashSet as Set
-import           Data.HashSet ( HashSet )
+import Options.Applicative
+import Data.Semigroup ((<>))
 
-states :: String
-states = "01xlh"
-
-statesSet :: HashSet Char
-statesSet = Set.fromList states
+import Util
 
 waveTable :: HashMap ByteString Char
 waveTable
@@ -35,15 +31,6 @@ waveTable
 
 defaultWave :: Char
 defaultWave = Map.lookupDefault (chr 255) "xx" waveTable
-
-pad :: Int -> ByteString -> ByteString
-pad n bs =
-  let
-    n' = fromIntegral n
-    l' = fromIntegral $ B.length bs :: Double
-    padLen = ceiling (l' / n' ) - B.length bs
-  in
-    B.concat [bs, B.replicate padLen (B.last bs)]
 
 statesMap :: ByteString -> ByteString
 statesMap = B.pack . go
@@ -56,13 +43,6 @@ statesMap = B.pack . go
       in
         Map.lookupDefault defaultWave s waveTable : go rest
 
-canonical :: ByteString -> ByteString
-canonical = B.map f
-  where
-    f :: Char -> Char
-    f a | a `Set.member` statesSet = a
-        | otherwise = 'x'
-
 xForm :: ByteString -> ByteString
 xForm inp =
   let
@@ -74,9 +54,28 @@ xForm inp =
     , statesOut
     ]
 
+data Opts =
+  Opts
+  { repeatsOutFile :: FilePath
+  }
+
+parseOpts :: Parser Opts
+parseOpts = Opts
+  <$> argument str
+      (  metavar "HUSFILE.hus"
+      <> value ""
+      <> help "A Horizontal-Uncompressed State file (or use stdin)")
+
+opts :: ParserInfo Opts
+opts = info (parseOpts <**> helper)
+  ( fullDesc
+  <> progDesc "Map states in a Horizontal-Uncompressed State file to the standard X2 wavetable and output Horizontal-Uncompressed Binary"
+  <> header "hus-x2-hub - apply standard X2 wavetable")
+
 main :: IO ()
 main = do
-  contents <- B.getContents
+  Opts inpFile <- execParser opts
+  contents <- getInput inpFile
 
   mapM_
     (B.putStrLn

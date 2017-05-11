@@ -16,6 +16,10 @@ import           Data.ByteString.Char8 (ByteString)
 import           Data.Char (chr)
 import           Data.Maybe (fromMaybe)
 import           System.Environment (getArgs)
+import Options.Applicative
+import Data.Semigroup ((<>))
+
+import Util
 
 waveTable :: [(Char,Char)]
 waveTable
@@ -47,9 +51,36 @@ xForm inp =
     , B.pack $ show ( B.length states )
     , B.map (lookupDefault defaultWave waveTable) states]
 
-main :: IO ()
+data Opts =
+  Opts
+  { repeatsOutFile :: FilePath
+  }
+
+parseOpts :: Parser Opts
+parseOpts = Opts
+  <$> argument str
+      (  metavar "HUSFILE.hus"
+      <> value ""
+      <> help "A Horizontal-Uncompressed State file (or use stdin)")
+
+opts :: ParserInfo Opts
+opts = info (parseOpts <**> helper)
+  ( fullDesc
+  -- TODO Wavetable not formatted right by optparse
+  <> progDesc "Map states in a Horizontal-Uncompressed State file to the standard X1 wavetable and output Horizontal-Uncompressed Binary. \n\
+              \ \n\
+              \ Wavetable: \n\
+              \ 0 '0' \n\
+              \ 1 '1' \n\
+              \ 2 'x' or 'z' \n\
+              \ 3 'l' \n\
+              \ 4 'h'"
+  <> header "hus-x1-hub - apply standard X1 wavetable")
+
+main  :: IO ()
 main = do
-  contents <- B.getContents
+  Opts inpFile <- execParser opts
+  contents <- getInput inpFile
 
   mapM_
     (B.putStrLn
