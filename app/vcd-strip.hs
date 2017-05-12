@@ -24,31 +24,11 @@
 
 module Main where
 
-import           Control.Concurrent -- (getNumCapabilities, Chan, writeChan, newChan, forkIO, getChanContents)
-import           Control.Monad (when)
-import           Control.Parallel.Strategies
 import           Data.Attoparsec.ByteString.Char8
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.ByteString.Builder (hPutBuilder)
--- Which set is faster? ANSWER: hashset
--- DONE: bloom filter, perfect hash suck; bytestring-trie disclaims it is worse that HashSet; bitset is same
 import qualified Data.HashSet as Set
-import qualified Data.Map as Map
-import           Data.Maybe (isJust)
--- import qualified Data.Vector.Storable.ByteString.Char8 as V
-import           System.Environment (getArgs)
-import           System.IO (stderr, hPutStrLn, stdout)
 
-import Chunk
-import Util
-import Vcd
-
-import Data.List (groupBy)
-import Debug.Trace
-import System.IO.MMap
-import System.Exit
-import System.Mem
+import Lib
 
 type Set = Set.HashSet
 

@@ -19,20 +19,9 @@ Memory and runtime will suffer with large inputs.
 module Main where
 
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Function ((&))
 import qualified Data.HashSet as Set
-import           Data.List (partition)
-import           Data.List.Split (chunksOf)
-import           Data.Maybe (fromJust)
-import           System.Environment (getArgs)
 
-data Hcd =
-  Hcd
-  { pin :: ByteString
-  , lens :: ByteString
-  , states :: ByteString
-  }
+import Lib
 
 ls2Hcd [p,l,s] = Hcd p l s
 
@@ -60,7 +49,7 @@ main = do
       forceSet = Set.fromList (map fst forces)
 
     mapM_ (B.putStr . hcdToBS)
-      (filter (not . flip Set.member forceSet . pin) hcds)
+      (filter (not . flip Set.member forceSet . hcdPin) hcds)
 
     mapM_ (B.putStr . hcdToBS .  (\(p,s) -> Hcd p "1" s)) forces
 

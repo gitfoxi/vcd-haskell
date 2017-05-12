@@ -7,15 +7,9 @@
 module Main where
 
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.ByteString.Builder (hPutBuilder)
 import qualified Data.HashMap.Strict as HashMap
-import           Data.HashMap.Strict ( HashMap )
-import           System.Environment (getArgs)
-import           System.IO (stdout)
 
-import Util
-import Vcd
+import Lib
 
 
 mapNames ::

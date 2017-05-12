@@ -13,21 +13,9 @@ TODO Handle padding -- divisible by 6 for VM, 8 for SM
 
 module Main where
 
-import           Control.Exception
-import           Control.Monad
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Char (isSpace)
-import           Data.Function ((&))
-import           Data.List.Split (chunksOf)
-import           Data.Maybe (fromJust)
-import           System.Environment (getArgs)
-import           System.Exit
-import           System.Process.ByteString
 
-import Util
-
-import Debug.Trace
+import Lib
 
 padTo :: Int
 padTo = 8 -- hardcode for now, 6 for VM

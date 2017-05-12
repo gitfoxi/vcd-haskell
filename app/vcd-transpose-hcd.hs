@@ -18,16 +18,10 @@ Memory and runtime will suffer with large inputs.
 
 module Main where
 
-import           Control.Arrow (second)
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.List (foldl')
 import qualified Data.HashMap.Strict as HashMap
-import           Data.HashMap.Strict ( HashMap )
-import           Data.Maybe (fromJust)
 
-import Util
-import Vcd
+import Lib
 
 mkAliasWireMap :: [Header] -> HashMap ByteString ByteString
 mkAliasWireMap hdrs =

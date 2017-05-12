@@ -7,14 +7,9 @@
 module Main where
 
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Function ((&))
 import qualified Data.HashSet as Set
-import           Data.List.Split (chunksOf)
-import           System.Environment (getArgs)
 
-import qualified Hcd
-import           Hcd (Hcd)
+import Lib
 
 mkPairs :: [String] -> [(String, String)]
 mkPairs ( a:b:rest ) = (a,b) : mkPairs rest
@@ -24,9 +19,9 @@ writePort :: [Hcd] -> (FilePath, [ByteString] ) -> IO ()
 writePort hcds ( file, pins ) =
   let
     pinSet = Set.fromList pins
-    portHcds = filter (flip Set.member pinSet . Hcd.pin) hcds
+    portHcds = filter (flip Set.member pinSet . hcdPin) hcds
   in
-    B.writeFile file (B.concat (map Hcd.toByteString
+    B.writeFile file (B.concat (map toByteString
                                portHcds))
 
 main :: IO ()
@@ -47,6 +42,6 @@ main = do
       hcds =
         B.lines f &
         chunksOf 3 &
-        map Hcd.fromList
+        map fromList
 
     mapM_ (writePort hcds) (zip ports pinLists)

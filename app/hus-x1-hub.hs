@@ -10,16 +10,10 @@ TODO: Warn if lookupDefault ever actually takes the default
 
 {-# LANGUAGE OverloadedStrings #-}
 
-import           Control.Arrow
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
-import           Data.Char (chr)
-import           Data.Maybe (fromMaybe)
-import           System.Environment (getArgs)
-import Options.Applicative
-import Data.Semigroup ((<>))
 
-import Util
+import Lib
 
 waveTable :: [(Char,Char)]
 waveTable
@@ -56,7 +50,7 @@ data Opts =
   { repeatsOutFile :: FilePath
   }
 
-parseOpts :: Parser Opts
+parseOpts :: OptionsParser Opts
 parseOpts = Opts
   <$> argument str
       (  metavar "HUSFILE.hus"

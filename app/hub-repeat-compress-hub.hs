@@ -13,24 +13,9 @@ TODO Handle padding -- divisible by 6 for VM, 8 for SM
 
 module Main where
 
--- import           Control.Exception
-import           Control.Monad
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Char (isSpace)
--- import           Data.Function ((&))
-import           Data.List (nub, sort)
--- import           Data.List.Split (chunksOf)
-import           Data.Maybe (fromJust)
--- import           System.Environment (getArgs)
--- import           System.Exit
--- import           System.Process.ByteString
-import Options.Applicative
-import Data.Semigroup ((<>))
 
-import Util
-
--- import Debug.Trace
+import Lib
 
 getLength :: ByteString -> Int
 getLength s =
@@ -56,7 +41,7 @@ data Opts =
   , repeatsOutFile :: FilePath
   }
 
-parseOpts :: Parser Opts
+parseOpts :: OptionsParser Opts
 parseOpts = Opts
   <$> (fmap read . strOption )
       (  long "threshold"

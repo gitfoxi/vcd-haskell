@@ -7,9 +7,9 @@ import           Data.ByteString.Char8 (ByteString)
 
 data Hcd =
   Hcd
-  { pin :: ByteString
-  , lens :: ByteString
-  , states :: ByteString
+  { hcdPin :: ByteString
+  , hcdLens :: ByteString
+  , hcdStates :: ByteString
   }
 
 fromList :: [ByteString] -> Hcd

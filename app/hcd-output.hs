@@ -8,13 +8,9 @@ Convert and hcd that only contains static pins to a 1-cycle hcd to save memory
 module Main where
 
 import qualified Data.ByteString.Char8 as B
-import           Data.Function ((&))
 import qualified Data.HashSet as Set
-import           Data.List.Split (chunksOf)
-import           System.Environment (getArgs)
 
-import qualified Hcd
-import           Hcd (Hcd(..))
+import Lib
 
 toOuput :: Hcd -> Hcd
 toOuput (Hcd p l s) =
@@ -37,13 +33,13 @@ main = do
       hcds =
         B.lines f &
         chunksOf 3 &
-        map Hcd.fromList
+        map fromList
 
       hcdsOut =
         map (\h ->
-               if Set.member (Hcd.pin h) outputsSet
+               if Set.member (hcdPin h) outputsSet
                then toOuput h
                else h) hcds
 
-    mapM_ ( B.putStr . Hcd.toByteString ) hcdsOut
+    mapM_ ( B.putStr . toByteString ) hcdsOut
 

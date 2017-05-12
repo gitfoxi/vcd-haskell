@@ -1,17 +1,4 @@
-{- hcd-expand-hus < pattern.hcd > pattern.hus
-
-hus = Horizontal Uncompressed States
-
--- Clocks in signals on rising jtg_tck
-
--- TODO clock outputs on falling tck
--- TODO change timestamp to 200ns
-
-This code doesn't stream because it has to read the last line of input before it
-can write the first line of output.
-
-Memory and runtime will suffer with large inputs.
-
+{- hcd-split-static
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -19,19 +6,8 @@ Memory and runtime will suffer with large inputs.
 module Main where
 
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Function ((&))
-import           Data.List (partition)
-import           Data.List.Split (chunksOf)
-import           Data.Maybe (fromJust)
-import           System.Environment (getArgs)
 
-data Hcd =
-  Hcd
-  { pin :: ByteString
-  , lens :: ByteString
-  , states :: ByteString
-  }
+import Lib
 
 ls2Hcd [p,l,s] = Hcd p l s
 
@@ -58,7 +34,7 @@ mkDynamicOut hcds =
 
 mkPinList :: [Hcd] -> ByteString
 mkPinList hcds =
-  map pin hcds
+  map hcdPin hcds
   & B.unlines
 
 main :: IO ()

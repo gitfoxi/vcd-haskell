@@ -5,25 +5,16 @@
 -- TODO: get repeats which may be non-1 and assoc with vector for instruction generation
 {-# LANGUAGE OverloadedStrings #-}
 
-import           Control.Monad (forM_)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Unsafe as B
-import           Data.Char (isSpace, chr)
-import           System.Environment (getArgs)
-import System.IO.MMap
-import System.Mem
-import System.IO (hPutStrLn, stderr)
-
 import qualified Data.Array.Repa as R
 import qualified Data.Array.Repa.Repr.ByteString as R
-
 import Data.Word (Word8)
-
 import Data.Vector.Storable.ByteString
-
 import qualified Data.Vector as V
+
+import Lib
 
 getFormat :: ByteString -> [ByteString]
 getFormat =

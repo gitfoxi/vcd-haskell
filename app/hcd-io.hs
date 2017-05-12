@@ -19,23 +19,10 @@ Memory and runtime will suffer with large inputs.
 module Main where
 
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Function ((&))
 import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
-import           Data.List (partition)
-import           Data.List.Split (chunksOf)
-import           Data.Maybe (fromMaybe, fromJust)
-import           System.Environment (getArgs)
 
-import Debug.Trace
-
-data Hcd =
-  Hcd
-  { pin :: ByteString
-  , lens :: ByteString
-  , states :: ByteString
-  }
+import Lib
 
 data IOCtl =
   IOCtl
@@ -77,21 +64,17 @@ lineup = go '0' '0'
     go sa _  [] bs = map (\(tb,b) -> (tb,sa,b)) bs
     go _  sb as [] = map (\(ta,a) -> (ta, a,sb)) as
 
-diff :: [Int] -> [Int]
-diff (a:b:rest) = b - a : diff (b:rest)
-diff _ = []
-
 applyIO ioCtl target control =
   let
-    tTimes = (integrate . map (fst . fromJust . B.readInt) . B.words) (lens target)
-    cTimes = (integrate . map (fst . fromJust . B.readInt) . B.words) (lens control)
-    tts = zip tTimes (B.unpack . states $ target)
-    cts = zip cTimes (B.unpack . states $ control)
+    tTimes = (integrate . map (fst . fromJust . B.readInt) . B.words) (hcdLens target)
+    cTimes = (integrate . map (fst . fromJust . B.readInt) . B.words) (hcdLens control)
+    tts = zip tTimes (B.unpack . hcdStates $ target)
+    cts = zip cTimes (B.unpack . hcdStates $ control)
     (time,cs,ts) = unzip3 $ lineup cts tts
     ms = map (applyCtl ioCtl) (zip cs ts)
     maxTime = sum tTimes
   in
-    Hcd (pin target) (B.unwords . map (B.pack . show) . diff $ time ++ [ maxTime ]) (B.pack ms)
+    Hcd (hcdPin target) (B.unwords . map (B.pack . show) . diff $ time ++ [ maxTime ]) (B.pack ms)
 
 data StateClass = Low | High | Other
 
@@ -138,17 +121,17 @@ main = do
         map B.words &
         map mkIOCtl
 
-      hcdMap = Map.fromList (zip (map pin hcds) hcds)
+      hcdMap = Map.fromList (zip (map hcdPin hcds) hcds)
       ioCtlMap = Map.fromList (zip (map targetPin ioCtls) ioCtls)
 
       hcdOut =
         map doit hcds
 
       doit h =
-        if Map.member (pin h) ioCtlMap
+        if Map.member (hcdPin h) ioCtlMap
               then
                 let
-                  p = pin h
+                  p = hcdPin h
                   ioCtl =
                     fromMaybe (error $ B.unpack p ++ " not found in io-control map")
                           ( Map.lookup p ioCtlMap )

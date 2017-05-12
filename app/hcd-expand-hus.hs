@@ -19,10 +19,8 @@ Memory and runtime will suffer with large inputs.
 module Main where
 
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Function ((&))
-import           Data.List.Split (chunksOf)
-import           Data.Maybe (fromJust)
+
+import Lib
 
 main :: IO ()
 main = do

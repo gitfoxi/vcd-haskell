@@ -7,14 +7,9 @@ Convert and hcd that only contains static pins to a 1-cycle hcd to save memory
 
 module Main where
 
-import           Control.Monad
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Function ((&))
-import           Data.List.Split (chunksOf)
 
-import qualified Hcd
-import           Hcd (Hcd(..))
+import Lib
 
 isStatic :: Hcd -> Bool
 isStatic (Hcd _ l _) =
@@ -24,7 +19,7 @@ isStatic (Hcd _ l _) =
 
 mkStaticOut :: [Hcd] -> ByteString
 mkStaticOut hcds =
-  map Hcd.toByteString hcds
+  map toByteString hcds
   & B.concat
 
 main :: IO ()
@@ -36,13 +31,13 @@ main = do
       hcds =
         B.lines f &
         chunksOf 3 &
-        map Hcd.fromList
+        map fromList
 
       nonStatic = filter (not . isStatic) hcds
 
     unless (null nonStatic)
       $ error ( "Non-static pins detected:\n" ++
-                ( B.unpack . B.concat . map Hcd.toByteString
+                ( B.unpack . B.concat . map toByteString
                   $ nonStatic ) )
 
     B.putStr (mkStaticOut hcds)

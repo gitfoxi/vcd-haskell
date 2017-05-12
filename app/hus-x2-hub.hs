@@ -13,14 +13,9 @@ TODO This is a bit slower than I'd like
 {-# LANGUAGE OverloadedStrings #-}
 
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-import           Data.Char (chr)
 import qualified Data.HashMap.Strict as Map
-import           Data.HashMap.Strict (HashMap)
-import Options.Applicative
-import Data.Semigroup ((<>))
 
-import Util
+import Lib
 
 waveTable :: HashMap ByteString Char
 waveTable
@@ -59,7 +54,7 @@ data Opts =
   { repeatsOutFile :: FilePath
   }
 
-parseOpts :: Parser Opts
+parseOpts :: OptionsParser Opts
 parseOpts = Opts
   <$> argument str
       (  metavar "HUSFILE.hus"

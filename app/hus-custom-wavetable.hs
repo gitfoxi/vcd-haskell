@@ -19,27 +19,16 @@ TODO This is a bit slower than I'd like
 
 {-# LANGUAGE OverloadedStrings #-}
 
-import Control.Monad
 import qualified Data.ByteString.Char8 as B
-import           Data.ByteString.Char8 (ByteString)
-
-import           Data.Function (on)
-import           Data.List (sort, nub, sortBy, groupBy)
-import           Data.Hashable
-import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
-import Options.Applicative
-import Data.Semigroup ((<>))
 
+import Lib
 
-import Util
-import WaveTable
-
-chunksOf :: Int -> ByteString -> [ByteString]
-chunksOf n bs
+chunksOfBS :: Int -> ByteString -> [ByteString]
+chunksOfBS n bs
   | B.null bs = []
-  | otherwise = B.take n bs : chunksOf n (B.drop n bs)
+  | otherwise = B.take n bs : chunksOfBS n (B.drop n bs)
 
 unique :: Hashable a => Eq a => [a] -> [a]
 unique = Set.toList . Set.fromList
@@ -49,7 +38,7 @@ mkTable xmode inp =
   let
     [pin, statesIn] = B.words inp
     states = pad xmode . canonical $ statesIn
-    table = sort . unique . nub . chunksOf xmode $ states
+    table = sort . unique . nub . chunksOfBS xmode $ states
   in
     WaveTable [pin] table
 
@@ -72,7 +61,7 @@ data Opts =
   , waveTableFile :: FilePath
   }
 
-parseOpts :: Parser Opts
+parseOpts :: OptionsParser Opts
 parseOpts = Opts
   <$> argument auto
       (  metavar "XMODE"
