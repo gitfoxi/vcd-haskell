@@ -21,8 +21,6 @@
 --
 -- TODO: Try benchmarking on a computer with many cores. Only getting 2x speedup on my 4-core computer
 
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
 
 module Main where
 
