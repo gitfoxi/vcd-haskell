@@ -27,12 +27,36 @@ ls2Hcd [p,l,s] = Hcd p l s
 
 hcdToBS (Hcd p l s) = B.unlines [p, l, s]
 
+data Opts =
+  Opts
+  { optForceFile :: FilePath
+  , optInput :: FilePath
+  }
+
+parseOpts :: OptionsParser Opts
+parseOpts = Opts
+  <$> strOption
+      (  long "force"
+      <> short 'f'
+      <> metavar "FORCE_FILE.txt"
+      <> help "File containing one space-separated pair of WIRE STATE per line")
+  <*> argument str
+      (  metavar "HCDFILE.hcd"
+      <> value ""
+      <> help  "A Horizontal-Compressed Dump file")
+
+opts :: ParserInfo Opts
+opts = info (parseOpts <**> helper)
+  ( fullDesc
+  <> progDesc "Add, mask or force wires in an HCD whether a wire with that name already existed or not. Example line in the FORCE_FILE.txt: 'stupid_sig_n x'"
+  <> header "hcd-force - force static wires")
+
+
 main :: IO ()
 main = do
-    [forceFile] <- getArgs
+    Opts forceFile vcdFile <- execParser opts
     ff <- B.readFile forceFile
-
-    f <- B.getContents
+    f <- getInput vcdFile
 
     let
       hcds :: [Hcd]

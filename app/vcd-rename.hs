@@ -19,11 +19,37 @@ mapNames ::
 mapNames nameMap (Wire n al nm) = Wire n al (HashMap.lookupDefault nm nm nameMap)
 mapNames _ a = a
 
--- cabal/stack: compile RTS threaded
+
+data Opts =
+  Opts
+  { optRenameFile :: FilePath
+  , optInput :: FilePath
+  }
+
+parseOpts :: OptionsParser Opts
+parseOpts = Opts
+  <$> strOption
+      (  long "renameFile"
+      <> short 'r'
+      <> value ""
+      <> metavar "FILENAME.txt"
+      <> help "File containing one space-separated pair of OLDNAME NEWNAME per line")
+  <*> argument str
+      (  metavar "VCDFILE.vcd"
+      <> value ""
+      <> help  "A Vector-Change Dump file")
+
+opts :: ParserInfo Opts
+opts = info (parseOpts <**> helper)
+  ( fullDesc
+  <> progDesc "Rename wires in a VCD"
+  <> header "vcd-rename - Rename wires")
+
 main :: IO ()
 main = do
-    [renameFile] <- getArgs
+    Opts renameFile vcdFile <- execParser opts
     renameContents <- B.readFile renameFile
+    f <- getInput vcdFile
 
     let
       -- XXX Will not handle bad input like a blank line
@@ -31,7 +57,6 @@ main = do
       nameMap =
         HashMap.fromList (map ( toTuple . B.words ) ( B.lines renameContents ))
 
-    f <- B.getContents
 
     let
         (hdrs, theRest) = splitHeaders f

@@ -124,13 +124,39 @@ filterChunks nThreads bs keep =
       -- map B.unlines . map eatExtraTimestamps
   (eatExtraTimestamps . concat ) ( withStrategy (parBuffer ( nThreads * 20 ) rdeepseq) . map (filterChunk keep) $ bs)
 
+data Opts =
+  Opts
+  { optKeepFile :: FilePath
+  , optInput :: FilePath
+  }
+
+parseOpts :: OptionsParser Opts
+parseOpts = Opts
+  <$> strOption
+      (  long "keepWires"
+      <> short 'k'
+      <> value ""
+      <> metavar "FILENAME.txt"
+      <> help "File containing whitespace-separated list of pins to keep")
+  <*> argument str
+      (  metavar "VCDFILE.vcd"
+      <> value ""
+      <> help "A Vector-Change Dump file")
+
+opts :: ParserInfo Opts
+opts = info (parseOpts <**> helper)
+  ( fullDesc
+  <> progDesc "Remove unwanted wires and other noise so subsequent tools can be fast and don't have to worry about obscure constructs. For best results, remove all free-running clocks and add them back as break vectors in their own port. Any conversion tool will run much faster with vcd-strip in front of it."
+  <> header "vcd-strip - minimize VCD before further conversion")
+
 -- cabal/stack: compile RTS threaded
 main :: IO ()
 main = do
     traceEventIO "hello world"
-    [configFile, vcdFile] <- getArgs
+    Opts configFile vcdFile <- execParser opts
     -- f <- B.readFile vcdFile
-    f <- mmapFileByteString vcdFile Nothing
+    -- f <- mmapFileByteString vcdFile Nothing
+    f <- getInput vcdFile -- TODO: getInput to mmapFileByteString if its a regular file
     traceEventIO "mmap done"
     performGC
     traceEventIO "GC done"

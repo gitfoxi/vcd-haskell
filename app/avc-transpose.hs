@@ -68,9 +68,28 @@ splitAtEach i inp
   let (first, rest) = B.splitAt i inp
   in first : splitAtEach i rest
 
+data Opts =
+  Opts
+  { optInput :: FilePath
+  }
+
+parseOpts :: OptionsParser Opts
+parseOpts = Opts
+  <$> argument str
+      (  metavar "ASCII_VECTOR.avc"
+      <> value ""
+      <> help "An AVC file formatted for input to v2b")
+
+opts :: ParserInfo Opts
+opts = info (parseOpts <**> helper)
+  ( fullDesc
+  <> progDesc "An experiment to do v2b's job much faster. Uses too much memory and doesn't support scan or anything, but is fast."
+  <> header "avc-transpose - Fast vertical to horizontal ASCII vectors")
+
+
 main = do
-    [avcFile] <- getArgs
-    f <- mmapFileByteString avcFile Nothing
+    Opts avcFile <- execParser opts
+    f <- getInput avcFile -- TODO: getInput to mmapFileByteString if its a regular file
     performGC
 
     let 
