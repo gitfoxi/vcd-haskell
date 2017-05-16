@@ -13,7 +13,7 @@ TODO: Warn if lookupDefault ever actually takes the default
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString.Char8 (ByteString)
 
-import Lib
+import Lib hiding (lookupDefault, lookup)
 
 waveTable :: [(Char,Char)]
 waveTable
