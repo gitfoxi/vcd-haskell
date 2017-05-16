@@ -12,6 +12,10 @@ build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 tested-with:         GHC == 8.0.2
+extra-source-files: ALDC/memstream.h
+                    ALDC/aldc.h
+                    ALDC/bitfile.h		ALDC/lzlocal.h
+                    ALDC/fmemopen.h
 
 
 library
@@ -137,6 +141,14 @@ Executable hub-binl
   ghc-options:  -rtsopts -O2 -threaded
   Main-Is:        hub-binl.hs
   Hs-Source-Dirs: app
+  includes:        aldc.h
+  c-sources:          ALDC/aldc.c		
+                      ALDC/bitfile.c
+                      ALDC/brute.c
+                      ALDC/fmemopen.c
+                      ALDC/memstream.c
+  cc-options:          -O3 -Wall -Wextra -pedantic -ansi -c -march=native
+  include-dirs:  ALDC
   build-depends:        base,
                         vcd,
                         optparse-applicative,

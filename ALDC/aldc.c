@@ -182,6 +182,7 @@ int EncodeAldc(FILE *fpIn, FILE *fpOut)
 
     matchData = FindMatch(windowHead, uncodedHead);
 
+    int init = 0;
     /* now encode the rest of the file until an EOF is read */
     while (len > 0)
     {
@@ -192,8 +193,12 @@ int EncodeAldc(FILE *fpIn, FILE *fpOut)
         }
         /* fprintf(stderr, "matchData: offset %d length %d\n", matchData.offset, matchData.length); */
 
-        if (matchData.length <= MAX_UNCODED)
+        /* XXX Aparently the buffer is not necessarily reset to all 0s so
+           I guess fill it with literals as a work-around */
+        if (init < WINDOW_SIZE || matchData.length <= MAX_UNCODED)
         {
+          init++;
+
             /* not long enough match.  write uncoded flag and character */
             BitFilePutBit(UNCODED, bfpOut);
             BitFilePutChar(uncodedLookahead[uncodedHead], bfpOut);
@@ -226,6 +231,10 @@ int EncodeAldc(FILE *fpIn, FILE *fpOut)
         {
           char c = buf[i];
             /* add old byte into sliding window and new into lookahead */
+        /* getc optimization may have caused a subtle bug */
+        /* i = 0; */
+        /* while ((i < matchData.length) && ((c = getc(fpIn)) != EOF)) */
+        /*   { */
             ReplaceChar(windowHead, uncodedLookahead[uncodedHead]);
             uncodedLookahead[uncodedHead] = c;
             windowHead = Wrap((windowHead + 1), WINDOW_SIZE);
@@ -390,14 +399,7 @@ int DecodeAldc(FILE *fpIn, FILE *fpOut)
             {
                 c = slidingWindow[Wrap((code.offset + i), WINDOW_SIZE)];
                 putc(c, fpOut);
-                uncodedLookahead[i] = c;
-            }
-
-            /* write out decoded string to sliding window */
-            for (i = 0; i < code.length; i++)
-            {
-                slidingWindow[Wrap((nextChar + i), WINDOW_SIZE)] =
-                    uncodedLookahead[i];
+                slidingWindow[Wrap((nextChar + i), WINDOW_SIZE)] = c;
             }
 
             nextChar = Wrap((nextChar + code.length), WINDOW_SIZE);
@@ -426,6 +428,7 @@ int EncodeAldcString(char *sIn, size_t inLen, char **sOut, size_t *outLen) {
   *outLen = memOutSz;
   *sOut = memOut;
   /* TODO check errors */
+  /* TODO free something? */
   return 0;
 }
 /* Caller frees *sOut */
@@ -442,5 +445,6 @@ int DecodeAldcString(char *sIn, size_t inLen, char **sOut, size_t *outLen) {
   *outLen = memOutSz;
   *sOut = memOut;
   /* TODO check errors */
+  /* TODO free something? */
   return 0;
 }
