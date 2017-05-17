@@ -31,7 +31,6 @@ parseOpts = Opts
   <$> strOption
       (  long "renameFile"
       <> short 'r'
-      <> value ""
       <> metavar "FILENAME.txt"
       <> help "File containing one space-separated pair of OLDNAME NEWNAME per line")
   <*> argument str

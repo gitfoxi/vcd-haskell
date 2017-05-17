@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Uncomment to debug:
-# set -x
+set -x
 
 # Fail as soon as any program fails:
 set -e
@@ -26,19 +26,22 @@ if [ ! -e $STRIPPED ] \
        || ! diff -q keep-signals.txt.md5 <(md5 keep-signals.txt) \
        || ! diff -q $INP.ls <(ls -l $INP)
 then
-    echo Running vcd-strip
-    vcd-strip keep-signals.txt $INP > $STRIPPED
-    echo vcd-strip done
-    md5 keep-signals.txt > keep-signals.txt.md5
-    ls -l $INP > $INP.ls
+    echo Running vcd-strip because of new VCD or keep-signals.txt
+    STRIP="vcd-strip -k keep-signals.txt $INP | tee $STRIPPED"
+else
+    STRIP="cat $STRIPPED"
 fi
 
-cat $STRIPPED | vcd-rename rename.txt | vcd-clock | vcd-transpose-hcd | hcd-expand-hus | hus-x1-hub | hub-binl $PORT $BASE wX1 | $GZIP > $BASE.binl.gz
+eval $STRIP | vcd-rename -r rename.txt | vcd-clock | vcd-transpose-hcd | hcd-expand-hus | hus-x1-hub | hub-binl $PORT $BASE wX1 | $GZIP > $BASE.binl.gz
 
-# remove TCK TODO hcd-rm
-cat $STRIPPED | vcd-rename rename.txt | vcd-clock | vcd-transpose-hcd | sed -e '/^jtg_tck/ { N; N; d; }' > $BASE.hcd
+# So vcd knows not to run again if nothing changed
+md5 keep-signals.txt > keep-signals.txt.md5
+ls -l $INP > $INP.ls
 
-hcd-split-static $BASE-static.hcd $BASE-dynamic.hcd $BASE-static-pins.txt < $BASE.hcd
+# remove TCK TODO hcd-rm -- just use hcd-split
+cat $STRIPPED | vcd-rename -r rename.txt | vcd-clock | vcd-transpose-hcd | sed -e '/^jtg_tck/ { N; N; d; }' > $BASE.hcd
+
+hcd-split-static -s $BASE-static.hcd -d $BASE-dynamic.hcd -S $BASE-static-pins.txt -D $BASE-dynamic-pins.txt < $BASE.hcd
 
 # cat $BASE-static.hcd | hcd-expand-hus
 

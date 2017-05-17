@@ -135,7 +135,6 @@ parseOpts = Opts
   <$> strOption
       (  long "keepWires"
       <> short 'k'
-      <> value ""
       <> metavar "FILENAME.txt"
       <> help "File containing whitespace-separated list of pins to keep")
   <*> argument str

@@ -1,4 +1,4 @@
-{- hcd-split portA.hcd portApins.txt portB.hcd portBpins.txt ...
+{- hcd-split portA.hcd portApins.txt portB.hcd portBpins.txt ... -i all.hcd
 
 -}
 
@@ -24,15 +24,38 @@ writePort hcds ( file, pins ) =
     B.writeFile file (B.concat (map toByteString
                                portHcds))
 
+data Opts =
+  Opts
+  { optInput :: FilePath
+  , optOutHcdOrPinList :: [String]
+  }
+
+parseOpts :: OptionsParser Opts
+parseOpts = Opts
+  <$> strOption
+      (  long "input"
+      <> short 'i'
+      <> metavar "INPUT_FILE.hcd"
+      <> help "The input file to split (or use stdin)")
+  <*> some (argument str
+      (  metavar "A.hcd Apin.txt ..."
+      <> help  "Pairs of output HCD files and text files containing the space-separated list of corresponding pins"))
+
+opts :: ParserInfo Opts
+opts = info (parseOpts <**> helper)
+  ( fullDesc
+  <> progDesc "Split an HCD into several for multiport. Also useful to delete pins you don't want in your final output (like io control pins)."
+  <> header "hcd-split - split one HCD into one or more HCDs")
+
+
 main :: IO ()
 main = do
     -- portA portApins.txt portB portBpins.txt ...
-    args <- getArgs
-
-    f <- B.getContents
+    Opts inpFile hcdPinPairs <- execParser opts
+    f <- getInput inpFile
 
     let
-      (ports, pinFiles) = unzip $ mkPairs args
+      (ports, pinFiles) = unzip $ mkPairs hcdPinPairs
     pinContents <- mapM B.readFile pinFiles
 
     let
