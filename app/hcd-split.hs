@@ -35,6 +35,7 @@ parseOpts = Opts
   <$> strOption
       (  long "input"
       <> short 'i'
+      <> value ""
       <> metavar "INPUT_FILE.hcd"
       <> help "The input file to split (or use stdin)")
   <*> some (argument str

@@ -21,6 +21,7 @@ module Main where
 import qualified Data.ByteString.Char8 as B
 import qualified Data.HashSet as Set
 import qualified Data.HashMap.Strict as Map
+import           Safe (lastMay)
 
 import Lib
 
@@ -68,13 +69,14 @@ applyIO ioCtl target control =
   let
     tTimes = (integrate . map (fst . fromJust . B.readInt) . B.words) (hcdLens target)
     cTimes = (integrate . map (fst . fromJust . B.readInt) . B.words) (hcdLens control)
-    tts = zip tTimes (B.unpack . hcdStates $ target)
-    cts = zip cTimes (B.unpack . hcdStates $ control)
+    -- XXX hack an empty state onto the end to account for the final time and drop it later
+    tts = zip tTimes (B.unpack . flip B.snoc '.' .  hcdStates $ target)
+    cts = zip cTimes (B.unpack . flip B.snoc '.' .  hcdStates $ control)
     (time,cs,ts) = unzip3 $ lineup cts tts
-    ms = map (applyCtl ioCtl) (zip cs ts)
-    maxTime = sum tTimes
+    -- XXX init hacks out that last state again
+    ms = init $ map (applyCtl ioCtl) (zip cs ts)
   in
-    Hcd (hcdPin target) (B.unwords . map (B.pack . show) . diff $ time ++ [ maxTime ]) (B.pack ms)
+    Hcd (hcdPin target) (B.unwords . map (B.pack . show) . diff $ time ) (B.pack ms)
 
 data StateClass = Low | High | Other
 

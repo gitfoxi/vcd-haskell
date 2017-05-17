@@ -6,6 +6,8 @@ set -x
 # Fail as soon as any program fails:
 set -e
 
+# TODO usage
+
 PORT=NO_REF_CLK
 
 INP=$1
@@ -32,16 +34,19 @@ else
     STRIP="cat $STRIPPED"
 fi
 
-eval $STRIP | vcd-rename -r rename.txt | vcd-clock | vcd-transpose-hcd | hcd-expand-hus | hus-x1-hub | hub-binl $PORT $BASE wX1 | $GZIP > $BASE.binl.gz
+# TODO stand-alone hcd-squash that reduces cycles like hcd-split-static
+
+eval $STRIP | vcd-rename -r rename.txt | vcd-clock | vcd-transpose-hcd \
+    | tee a.hcd |  hcd-io io-control.txt | tee io.hcd | hcd-output outputs.txt | hcd-force -f force-pins.txt \
+    | tee all.hcd | hcd-split \
+                >(hcd-expand-hus | hus-x1-hub | hub-binl pDynamic $BASE-pDynamic wX1 | $GZIP > $BASE-pDynamic.binl.gz) dynamic.txt \
+                >(hcd-expand-hus | hus-x1-hub | hub-binl pStatic $BASE-pStatic wX1 | $GZIP > $BASE-pStatic.binl.gz) static.txt \
+                >(tee jtag.hcd | hcd-expand-hus | hus-x1-hub | hub-binl pJtag $BASE-pJtag wX1 | $GZIP > $BASE-pJtag.binl.gz) jtag-pins.txt
 
 # So vcd knows not to run again if nothing changed
 md5 keep-signals.txt > keep-signals.txt.md5
 ls -l $INP > $INP.ls
 
-# remove TCK TODO hcd-rm -- just use hcd-split
-cat $STRIPPED | vcd-rename -r rename.txt | vcd-clock | vcd-transpose-hcd | sed -e '/^jtg_tck/ { N; N; d; }' > $BASE.hcd
-
-hcd-split-static -s $BASE-static.hcd -d $BASE-dynamic.hcd -S $BASE-static-pins.txt -D $BASE-dynamic-pins.txt < $BASE.hcd
 
 # cat $BASE-static.hcd | hcd-expand-hus
 

@@ -36,6 +36,7 @@ mkDynamicOut hcds =
 mkPinList :: [Hcd] -> ByteString
 mkPinList hcds =
   map hcdPin hcds
+  & sort
   & B.unlines
 
 data Opts =

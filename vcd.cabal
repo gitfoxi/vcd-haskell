@@ -186,6 +186,7 @@ Executable hcd-io
   Main-Is:         hcd-io.hs
   Hs-Source-Dirs: app
   build-depends:        base,
+                        safe,
                         vcd,
                         optparse-applicative,
                         bytestring,
