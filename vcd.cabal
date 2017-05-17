@@ -268,6 +268,15 @@ Executable hub-repeat-compress-hub
                         unordered-containers
   default-language:    Haskell2010
 
+Executable make-burst
+  ghc-options:  -rtsopts -O2 -threaded
+  Main-Is:          make-burst.hs
+  Hs-Source-Dirs: app
+  build-depends:        base,
+                        vcd,
+                        optparse-applicative
+  default-language:    Haskell2010
+
 source-repository head
   type:     git
   location: https://github.com/gitfoxi/vcd-haskell

@@ -47,7 +47,8 @@ eval $STRIP | vcd-rename -r rename.txt | vcd-clock | vcd-transpose-hcd \
 md5 keep-signals.txt > keep-signals.txt.md5
 ls -l $INP > $INP.ls
 
+# Make multiport burst
 
-# cat $BASE-static.hcd | hcd-expand-hus
+make-burst $BASE-burst pDynamic $BASE-pDynamic pStatic $BASE-pStatic pJtag $BASE-pJtag > $BASE-burst
 
-# io, output when control sig = 1
+# TODO make pmf
