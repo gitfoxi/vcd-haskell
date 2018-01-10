@@ -55,22 +55,46 @@ vecc2 paddedLength (pin, dat) = do
               B.pack . show . length . show $ datLength,
               B.pack . show $ datLength, compressed]
 
-vecc :: Int -> (ByteString, ByteString) -> ByteString
-vecc paddedLength (pin, dat) =
+-- VECC using libaldc.so
+-- XXX Stupidly running the program once per line and not even in parallel
+vecc :: FilePath -> Int -> (ByteString, ByteString) -> IO ByteString
+vecc libAldcPath paddedLength (pin, dat) = do
   let
     datLength = B.length dat
-  in
-    B.concat ["VECC PARA,SM,0,",
-              B.pack . show $ paddedLength,
-              ",(", pin, "),#",
-              B.pack . show . length . show $ datLength,
-              B.pack . show $ datLength, dat]
+    veccLine compressedDat =
+      B.concat ["VECC PARA,SM,0,",
+                B.pack . show $ paddedLength,
+                ",(", pin, "),#",
+                B.pack . show . length . show $ datLength,
+                B.pack . show $ datLength, dat]
 
-vecd :: Int -> (ByteString, ByteString) -> ByteString
-vecd paddedLength (pin, dat) =
+  -- Compressor subprocess
+  e <- try $
+      readProcessWithExitCode
+        "./v2b-experiment/aldc"
+        [libAldcPath]
+        (B.unlines [B.unwords [pin, dat]])
+
+  (exitCode, fc, ferr) <-
+    case e of
+            Left e  ->
+              do
+                warn $ show (e :: IOException)
+                return (ExitFailure 1, "", B.pack . show $ e)
+            Right x -> return x
+
+
+  unless (exitCode == ExitSuccess) $
+    error "hub-binl unable to start aldc subprocess; check libaldc.so path"
+
+  return (veccLine (head . hubLines $ fc))
+
+
+vecd :: Int -> (ByteString, ByteString) -> IO ByteString
+vecd paddedLength (pin, dat) = do
   let
     datLength = B.length dat
-  in
+  return $
     B.concat ["VECD PARA,SM,0,",
               B.pack . show $ paddedLength,
               ",(", pin, "),#",
@@ -116,12 +140,32 @@ aldcEncodeC inp = do
   free s
   return ret
 
+chooseVecc noCompress libAldcPath =
+  if noCompress
+     then vecd
+     else if null libAldcPath
+             then vecc2
+             else (vecc libAldcPath)
+
+formatComment :: ByteString -> ByteString -> ByteString
+formatComment port bs =
+  let (line, comment) = B.break isSpace bs
+      -- XXX 40 limitation for old testers. New ones can have 250
+      -- TODO warn when you truncate a comment
+      comment' = B.take 40 . B.tail $ comment
+  in
+    "CMNT " <> line <> ",\"" <> comment' <> "\",(" <> port <> ")"
+
 main :: IO ()
 main = do
-    [port, label, wavetable] <- fmap (map B.pack ) getArgs
+    Opts inputFile sPort sLabel sWavetable commentFile repeatFile libAldcPath noCompress useVM <- execParser opts
 
-    f <- B.getContents
+
+    f <- getInput inputFile
     let
+      port = B.pack sPort
+      label = B.pack sLabel
+      wavetable = B.pack sWavetable
       length = getLength f
       paddedLength = padTo * ( ceiling ( fromIntegral length / fromIntegral padTo ) ) :: Int
       paddedDat = padded paddedLength f
@@ -139,10 +183,18 @@ main = do
     B.putStrLn $ B.concat [ "SQPG 2,GENV,", B.pack . show $ length, ",,SM,(", port, ")" ]
     B.putStrLn $ B.concat [ "SQPG 3,STOP,,,,(", port, ")" ]
 
-    bs <-  mapM ( ( vecc2 paddedLength )  ) (hubLines paddedDat)
+    bs <-  mapM ( ((chooseVecc noCompress libAldcPath) paddedLength )  ) (hubLines paddedDat)
 
     -- putStrLn makes sure to end encoded lines with \n
     mapM_ B.putStrLn bs
+    -- TODO Options to use libaldc or leave uncompressed
+    -- TODO Don't use compression when it makes things longer
+    -- TODO insert repeats and comments
+    unless (null commentFile) $
+      do
+        comments <- B.readFile commentFile
+        mapM_ (B.putStrLn . formatComment port) (B.lines comments)
+
   {-
     -- Compressor subprocess
     e <- try $
@@ -167,3 +219,72 @@ main = do
       warn "hub-binl unable to start aldc subprocess; output will be uncompressed VECD instead of compressed VECC"
       mapM_ ( B.putStrLn . vecd paddedLength ) (hubLines paddedDat)
 -}
+
+data Opts =
+  Opts
+  { optInputFile :: FilePath
+  , optPort :: String
+  , optLabel :: String
+  , optWaveTable :: String
+  , optCommentFile :: String
+  , optRepeatFile :: String
+  , optLibAldcPath :: String
+  , optNoCompress :: Bool
+  , optUseVM :: Bool
+  }
+
+parseOpts :: OptionsParser Opts
+parseOpts = Opts
+  <$> argument str
+      (  metavar "HUB_FILE.hub"
+      <> value ""
+      <> help "A Horizontal-Uncompressed Binary file (or use stdin)")
+  <*> strOption
+      (  long "port"
+      <> short 'p'
+      <> metavar "TARGET_PORT"
+      <> help "Port Name - '@' for non-multiport")
+  <*> strOption
+      (  long "label"
+      <> short 'l'
+      <> metavar "LABEL"
+      <> help "Pattern label")
+  <*> strOption
+      (  long "wavetable"
+      <> short 'w'
+      <> value "wDefault"
+      <> metavar "WAVETABLE"
+      <> help "Wavetable name so vector editor knows how to render your vector")
+  <*> strOption
+      (  long "comments"
+      <> short 'c'
+      <> value ""
+      <> metavar "COMMENTS.comments"
+      <> help "File containing comments to associate with vector lines like '0 First-Line Comment'")
+  <*> strOption
+      (  long "repeats"
+      <> short 'r'
+      <> value ""
+      <> metavar "REPEATS.rep"
+      <> help "(NOT YET IMPLEMENTED) Repeats generated by a repeat compressor like hub-repeat-compress-hub")
+  <*> strOption
+      (  long "libaldc"
+      <> short 'a'
+      <> value ""
+      <> metavar "/PATH/TO/libaldc.so"
+      <> help "Use libaldc.so to do VECC compression instead of the built-in code - libaldc may be faster and more correct; it's certainly been around longer; the catch is you need to run on a compatible Linux with Advantest ASCII Interface Tools installed")
+  <*> switch
+      (  long "no-compress"
+      <> short 'n'
+      <> help "Do not use any VECC compression - this is fast for us but slow when you go to load vectors on the tester")
+  <*> switch
+      (  long "vector-memory"
+      <> short 'v'
+      <> help "(NOT YET IMPLEMENTED) Use VM Vector Memory - only for old testers like C400 or PinScale running in compatibility mode")
+
+
+opts :: ParserInfo Opts
+opts = info (parseOpts <**> helper)
+  ( fullDesc
+  <> progDesc "Create 93k SmartScale .binl vector"
+  <> header "hub-binl")
