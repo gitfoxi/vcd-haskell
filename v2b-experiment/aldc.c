@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const char* lib_path = "./libaldc_el5_x86_64.so";
+// const char* lib_path = "./libaldc_el5_x86_64.so";
 
 /* NOTE: Length must be a multiple of 8 bytes. Zero-pad if not */
 const char src_buf[] =
@@ -79,6 +79,8 @@ void encode(const char *src_buf, int src_buf_len, char **dest_buf_p, int *dest_b
 
 int main(int argc, char** argv)
 {
+  if(argc != 2) error("Usage: aldc /path/to/libaldc.so")
+    char* lib_path = argv[1];
     void* lib = dlopen(lib_path, RTLD_NOW | RTLD_LOCAL);
     if(lib == NULL) error("Failed to open libaldc");
 
