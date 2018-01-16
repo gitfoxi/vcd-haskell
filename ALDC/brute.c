@@ -89,7 +89,7 @@ encoded_string_t FindMatch(const unsigned int windowHead,
 
     while (1)
     {
-      // XXX See "This is screwed" below
+      /* XXX See "This is screwed" below */
       if (i == windowHead) { break; }
         if (slidingWindow[i] == uncodedLookahead[uncodedHead])
         {
@@ -99,12 +99,14 @@ encoded_string_t FindMatch(const unsigned int windowHead,
             while(slidingWindow[Wrap((i + j), WINDOW_SIZE)] ==
                 uncodedLookahead[Wrap((uncodedHead + j), MAX_CODED)])
             {
-              // XXX This is screwed but we do the wrong thing when we touch windowhead
-              // We're supposed to loop back on ourselves and start mating the data
-              // that would be decoded into the window at this point which could be
-              // good for compressing repetitve data, but this approach is messed
-              // up and as a quic hack, my best idea is just bail before getting near
-              // windowHead. Strangely this seems to make it a little faster
+            /*
+              XXX This is screwed but we do the wrong thing when we touch windowhead
+              We're supposed to loop back on ourselves and start mating the data
+              that would be decoded into the window at this point which could be
+              good for compressing repetitve data, but this approach is messed
+              up and as a quic hack, my best idea is just bail before getting near
+              windowHead. Strangely this seems to make it a little faster
+            */
               if(Wrap(( i + j ), WINDOW_SIZE) == windowHead) { break;}
 
                 if (j >= MAX_CODED)
