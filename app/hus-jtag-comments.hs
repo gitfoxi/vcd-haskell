@@ -94,7 +94,7 @@ data Dr =
   { drIn :: String
   , drOut :: String
   , drIr :: Maybe Integer
-  , cycle :: Int
+  , drCycle :: Int
   } deriving Show
 
 -- LSB First
@@ -134,6 +134,20 @@ isState state grp
 isDr = isState ShiftDr
 isIr = isState ShiftIr
 
+unShowS s = s ""
+
+asHex s = (unShowS . showHex $ s)
+
+formatDr :: Dr -> String
+formatDr dr =
+  (show . drCycle $ dr)
+  <> " IR: "
+  <> (asHex . fromMaybe 0 . drIr $ dr)
+  <> " DRtdi: "
+  <> (drIn dr)
+  <> " DRtdo: "
+  <> (drOut dr)
+
 main  :: IO ()
 main = do
   Opts inpFile tmsPin tdiPin tdoPin <- execParser opts
@@ -147,7 +161,7 @@ main = do
     -- (cycle, jtag-state, jtagIO)
     jtagStates :: [(Int, JtagState, JtagIO)]
     jtagStates = zip3 [0..]
-                      (tail $ scanl' jtagStateNext TestLogicReset (map tms jtagIO))
+                      (scanl' jtagStateNext TestLogicReset (map tms jtagIO))
                       jtagIO
     groups :: [[(Int, JtagState, JtagIO)]]
     groups = groupBy ((==) `on` jtagState ) jtagStates
@@ -163,4 +177,5 @@ main = do
     fromBools = foldl' shiftAdd (0 :: Integer) . reverse
     drs = mapMaybe decodeDr (zip groups ir)
 
-  mapM_ print drs
+  -- mapM_ print groups
+  mapM_ (putStrLn . formatDr) drs
