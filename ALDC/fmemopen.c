@@ -27,7 +27,7 @@ struct fmem {
 };
 typedef struct fmem fmem_t;
 
-static int readfn(void *handler, char *buf, int size) {
+static size_t readfn(void *handler, char *buf, size_t size) {
   fmem_t *mem = handler;
   size_t available = mem->size - mem->pos;
   
@@ -40,7 +40,7 @@ static int readfn(void *handler, char *buf, int size) {
   return size;
 }
 
-static int writefn(void *handler, const char *buf, int size) {
+static size_t writefn(void *handler, const char *buf, size_t size) {
   fmem_t *mem = handler;
   size_t available = mem->size - mem->pos;
 
@@ -53,7 +53,7 @@ static int writefn(void *handler, const char *buf, int size) {
   return size;
 }
 
-static fpos_t seekfn(void *handler, fpos_t offset, int whence) {
+static int seekfn(void *handler, int offset, size_t whence) {
   size_t pos;
   fmem_t *mem = handler;
 
@@ -83,10 +83,10 @@ static fpos_t seekfn(void *handler, fpos_t offset, int whence) {
   }
 
   mem->pos = pos;
-  return (fpos_t)pos;
+  return (int)pos;
 }
 
-static int closefn(void *handler) {
+static size_t closefn(void *handler) {
   free(handler);
   return 0;
 }

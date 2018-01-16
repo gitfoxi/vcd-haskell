@@ -145,9 +145,12 @@ Executable hub-binl
   c-sources:          ALDC/aldc.c		
                       ALDC/bitfile.c
                       ALDC/brute.c
-                      ALDC/fmemopen.c
                       ALDC/memstream.c
-  cc-options:          -O3 -Wall -Wextra -pedantic -ansi -c -march=native
+  if os(darwin) {
+  c-sources:
+      ALDC/fmemopen.c
+  }
+  cc-options:          -O3 -c -march=native
   include-dirs:  ALDC
   build-depends:        base,
                         vcd,
